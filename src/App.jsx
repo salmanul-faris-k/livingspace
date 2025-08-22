@@ -4,7 +4,7 @@ import './App.css'
 import Loginpege from './pages/Loginpege'
 import Home from './pages/Home'
 import Beem from './pages/Beem'
-import UserLayout from './components/userLayout'
+import UserLayout from './components/UserLayout'
 
 function App() {
 
