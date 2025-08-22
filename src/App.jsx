@@ -3,8 +3,8 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
 import Loginpege from './pages/Loginpege'
 import Home from './pages/Home'
-import UserLayout from './componetns/userLayout'
 import Beem from './pages/Beem'
+import UserLayout from './components/userLayout'
 
 function App() {
 
