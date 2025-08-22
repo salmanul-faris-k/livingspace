@@ -12,7 +12,7 @@ function App() {
     <>
 
   <Routes>
-          <Route path='/' element={<UserLayout />}>
+          <Route path='/' element={<UserLayout/>}>
             <Route index element={<Home />} />
             <Route path="beem" element={<Beem  />} />
 
