@@ -1,44 +1,60 @@
-import React, { useEffect, useState } from 'react';
-import { FaCalculator, FaRuler, FaHome, FaWrench, FaHammer, FaPlusCircle } from "react-icons/fa";
+import React, { useEffect, useState } from "react";
+import { FaCalculator, FaPlusCircle } from "react-icons/fa";
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
-import footings1 from '../assets/footings1.jpg'
-import footings2 from '../assets/footings2.jpg'
-import footings3 from '../assets/footings3.jpg'
-import footings4 from '../assets/footings4.jpg'
-import { GoDotFill } from 'react-icons/go';
-import { GiConcreteBag, GiSteelClaws } from 'react-icons/gi';
+import footings1 from "../assets/footings1.jpg";
+import footings2 from "../assets/footings2.jpg";
+import footings3 from "../assets/footings3.jpg";
+import footings4 from "../assets/footings4.jpg";
+import { GoDotFill } from "react-icons/go";
+import { GiConcreteBag, GiSteelClaws } from "react-icons/gi";
 
-
-function Beem() {
+function Sunshade() {
+  // State for current image in slider
   const [currentImage, setCurrentImage] = useState(0);
-  const [totalsteel, settotalsteel] = useState(0);
-
+  // State for total steel
+  const [totalSteel, setTotalSteel] = useState(0);
+  // Form inputs state
   const [formData, setFormData] = useState({
-    L: "",
-    B: "",
-    H: "",
-    diameterMainBar: "",
-    noOfMainBar: "",
-    diameterStirrups: "",
-    spacingStirrups: ""
+    L: "", // length (m)
+    B: "", // breadth (m)
+    H1: "", // height 1 (m)
+    H2: "", // height 2 (m)
+    diameterMainBar: "", // main bar diameter (mm)
+    spacingMainBar: "", // main bar spacing (m)
+    diameterDistBar: "", // distribution bar diameter (mm)
+    spacingDistBar: "", // distribution bar spacing (m)
   });
+  // Errors for validation
   const [errors, setErrors] = useState({});
+  // Calculation results
   const [results, setResults] = useState({
-    steel16mm: 0,
+    steel10mm: 0,
     steel8mm: 0,
     concrete: 0,
-     cement: 0,
-    couresaggregate:0,
-    fineaggregate:0
   });
 
+  const flooringImages = [footings1, footings2, footings3, footings4];
+
+  const nextImage = () => {
+    setCurrentImage((prev) => (prev + 1) % flooringImages.length);
+  };
+  const previousImage = () => {
+    setCurrentImage((prev) => (prev - 1 + flooringImages.length) % flooringImages.length);
+  };
+
+  // Validate input fields for positive numbers
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData.noOfMainBar || parseInt(formData.noOfMainBar) <= 0) {
-      newErrors.noOfMainBar = "Enter valid number of noOfMainBar";
-    }
-    ["L", "B", "H", "diameterMainBar", "noOfMainBar", "diameterStirrups", "spacingStirrups"].forEach(field => {
+    [
+      "L",
+      "B",
+      "H1",
+      "H2",
+      "diameterMainBar",
+      "spacingMainBar",
+      "diameterDistBar",
+      "spacingDistBar",
+    ].forEach((field) => {
       if (!formData[field] || parseFloat(formData[field]) <= 0) {
         newErrors[field] = `Enter valid ${field}`;
       }
@@ -47,80 +63,51 @@ function Beem() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const flooringImages = [footings1, footings2, footings3, footings4];
+  const decimalFields = [
+    "L",
+    "B",
+    "H1",
+    "H2",
+    "diameterMainBar",
+    "spacingMainBar",
+    "diameterDistBar",
+    "spacingDistBar",
+  ];
 
-  const nextImage = () => { setCurrentImage(prev => (prev + 1) % flooringImages.length); };
-  const previousImage = () => { setCurrentImage(prev => (prev - 1 + flooringImages.length) % flooringImages.length); };
-
-  const decimalFields = ["L", "B", "H", "spacingStirrups"]; // removed changed dropdown fields
-
+  // Handle input changes
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Handle formatting on blur for decimal inputs
   const handleBlur = (field, value) => {
     let formatted = value;
     if (decimalFields.includes(field)) {
       if (value === ".") formatted = "0.0";
       else if (value.startsWith(".")) formatted = `0${value}`;
     }
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: formatted
+      [field]: formatted,
     }));
   };
 
-  const calculateResults = () => {
-    if (!validateForm()) return;
-    const { L, B, H, diameterMainBar, noOfMainBar, diameterStirrups, spacingStirrups } = formData;
-    const Lm = parseFloat(L) || 0;
-    const Bm = parseFloat(B) || 0;
-    const Hm = parseFloat(H) || 0;
-    const diaMain = parseFloat(diameterMainBar) || 0;
-    const numMain = parseInt(noOfMainBar) || 0;
-    const diaStir = parseFloat(diameterStirrups) || 0;
-    const spacing = parseFloat(spacingStirrups) || 1;
-
-    // Concrete
-    const concrete = (Lm * Bm * Hm)*1.03;
-
-    // Main Steel (16mm)
-    // totalLengthMain = numMain * L (in m)
-    // Steel weight = totalLengthMain * dia^2 / 162
-    const bars=Lm+Hm
-    const totalLengthMain = (numMain * bars);
-    const steel16mm = ((totalLengthMain * Math.pow(diaMain, 2)) / 162)*1.03;
-
-    // Stirrups (8mm)
-    // number_stirrups = L / spacing + 1
-    // stirrup_length = 2 * (B + H)
-    // totalLengthStir = stirrup_length * number_stirrups
-    // weight = totalLengthStir * dia^2 / 162
-    const numberStirrups = Math.floor(Lm / spacing) + 1;
-    const stirrupLength = 2 * (Bm + Hm);
-    const totalLengthStir = stirrupLength * numberStirrups;
-    const steel8mm = ((totalLengthStir * Math.pow(diaStir, 2)) / 162)*1.03;
-const cement=(concrete*7.5).toFixed(2)
-const fineaggregate=((concrete*0.425)*1.03).toFixed(2)
-const couresaggregate=((concrete*0.850)*1.03).toFixed(2)
-    setResults({
-      steel16mm: steel16mm.toFixed(2),
-      steel8mm: steel8mm.toFixed(2),
-      concrete: concrete.toFixed(2)
-      ,cement,fineaggregate,couresaggregate
-    });
-  };
-
+  // Custom key down handler to allow valid keys only
   const handleKeyDown = (e, field) => {
     if (decimalFields.includes(field)) {
       if (
-        e.key === 'Backspace' || e.key === 'Delete' ||
-        e.key === 'Tab' || e.key === 'Enter' || e.key === 'Escape' ||
-        (e.key >= '0' && e.key <= '9') || e.key === '.' || e.key === '-'
+        e.key === "Backspace" ||
+        e.key === "Delete" ||
+        e.key === "Tab" ||
+        e.key === "Enter" ||
+        e.key === "Escape" ||
+        (e.key >= "0" && e.key <= "9") ||
+        e.key === "." ||
+        e.key === "-"
       ) {
         return;
       }
-      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
         e.preventDefault();
       } else {
         e.preventDefault();
@@ -128,23 +115,40 @@ const couresaggregate=((concrete*0.850)*1.03).toFixed(2)
     }
   };
 
+  // Calculation logic specifically for Sunshade
+  const calculateResults = () => {
+    if (!validateForm()) return;
+
+    const L = parseFloat(formData.L) || 0;
+    const B = parseFloat(formData.B) || 0;
+    const H1 = parseFloat(formData.H1) || 0;
+    const H2 = parseFloat(formData.H2) || 0;
+    const diaMain = parseFloat(formData.diameterMainBar) || 0;
+    const spacingMain = parseFloat(formData.spacingMainBar) || 1;
+    const diaDist = parseFloat(formData.diameterDistBar) || 0;
+    const spacingDist = parseFloat(formData.spacingDistBar) || 1;
+
+ const steel10mm=((diaMain*diaMain)/162)*(1/spacingMain)*(B+0.25)
+const steel8mm = ((diaDist * diaDist) / 162) * (B / spacingDist) * 1;
+    const concrete =(L*B)*((H2+H1)/2) ;
+    setResults({
+      steel10mm: steel10mm.toFixed(2),
+      steel8mm: steel8mm.toFixed(2),
+      concrete: concrete.toFixed(2),
+    });
+  };
+
+  // Update total steel state when results change
   useEffect(() => {
     const total =
-      Number(Number(results.steel16mm).toFixed(2)) +
+      Number(Number(results.steel10mm).toFixed(2)) +
       Number(Number(results.steel8mm).toFixed(2));
-
-    settotalsteel(Number(total.toFixed(1)));
-  }, [results.steel16mm, results.steel8mm]);
-
-
-  // Dropdown options for the three fields
-const diameterMainBarOptions = ["6","8","10","12","16","32"]
-const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString());
-  const diameterStirrupsOptions = ["6", "8", "10","12"];
+    setTotalSteel(Number(total.toFixed(2)));
+  }, [results.steel10mm, results.steel8mm]);
 
   return (
     <div className="min-h-screen md:h-screen bg-gradient-to-br from-gray-50 to-gray-100 lg:overflow-hidden">
-      {/* The layout and UI, input fields and results, image slider and summary remain unchanged */}
+      {/* Mobile layout */}
       <div className="lg:hidden">
         <div className="flex flex-col lg:flex-row">
           <div className="w-full lg:w-1/2 p-6 lg:p-8">
@@ -152,7 +156,7 @@ const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString(
               {/* Header */}
               <div className="p-6 lg:p-8 bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center mb-2">
                 <FaCalculator className="w-8 h-8 text-white mr-3" />
-                <h1 className="text-2xl lg:text-3xl font-bold text-white">Beam</h1>
+                <h1 className="text-2xl lg:text-3xl font-bold text-white">Sunshade</h1>
               </div>
               <div className="p-6 bg-emerald-50 border-b border-emerald-100">
                 <p className="text-sm text-emerald-800 leading-relaxed">
@@ -160,55 +164,40 @@ const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString(
                 </p>
               </div>
               <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
-
-                {/* Input fields for the beam */}
+                {/* Input fields */}
                 {[
-                  { label: 'Length L', indata: ' (m)', field: 'L', inputType: "text" },
-                  { label: 'Breadth B', indata: ' (m)', field: 'B', inputType: "text" },
-                  { label: 'Height H', indata: ' (m)', field: 'H', inputType: "text" },
-                  { label: 'Diameter of Main Bar', indata: ' (mm)', field: 'diameterMainBar', inputType: "select", options: diameterMainBarOptions },
-                  { label: 'No. of Main Bar', indata: ' (nos)', field: 'noOfMainBar', inputType: "select", options: noOfMainBarOptions },
-                  { label: 'Diameter of Stirrups', indata: ' (mm)', field: 'diameterStirrups', inputType: "select", options: diameterStirrupsOptions },
-                  { label: 'Spacing of Stirrups', indata: ' (m)', field: 'spacingStirrups', inputType: "text" },
-                ].map(({ label, field, indata, inputType, options }) => (
-                  <div key={field} className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                  { label: "Length L", indata: " (m)", field: "L" },
+                  { label: "Breadth B", indata: " (m)", field: "B" },
+                  { label: "Height H1", indata: " (m)", field: "H1" },
+                  { label: "Height H2", indata: " (m)", field: "H2" },
+                  { label: "Diameter of Main Bar", indata: " (mm)", field: "diameterMainBar" },
+                  { label: "Spacing of Main Bar", indata: " (m)", field: "spacingMainBar" },
+                  { label: "Diameter of Distribution Bar", indata: " (mm)", field: "diameterDistBar" },
+                  { label: "Spacing of Distribution Bar", indata: " (m)", field: "spacingDistBar" },
+                ].map(({ label, field, indata }) => (
+                  <div
+                    key={field}
+                    className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4"
+                  >
                     <label className="text-sm font-semibold text-gray-700 flex items-center sm:w-56 sm:flex-shrink-0">
                       <GoDotFill className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-emerald-600 flex-shrink-0" />
                       <span className="text-xs sm:text-sm">{label}</span>
                     </label>
-                    {inputType === "select" ? (
-                      <select
-                        className="w-full bg-emerald-50 sm:flex-1 sm:max-w-32 px-3 py-2 sm:px-4 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 sm:focus:ring-3 focus:ring-emerald-400 focus:border-emerald-500 transition-all text-sm font-medium"
-                        value={formData[field]}
-                        onChange={(e) => handleInputChange(field, e.target.value)}
-                        onBlur={(e) => handleBlur(field, e.target.value)}
-                      >
-                        <option value="">Select</option>
-                        {options.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        step="any"
-                        onKeyDown={(e) => handleKeyDown(e, field)}
-                        onWheel={(e) => e.target.blur()}
-                        placeholder="0"
-                        value={formData[field]}
-                        onChange={(e) => handleInputChange(field, e.target.value)}
-                        onBlur={(e) => handleBlur(field, e.target.value)}
-                        className="w-full bg-emerald-50 sm:flex-1 sm:max-w-32 px-3 py-2 sm:px-4 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 sm:focus:ring-3 focus:ring-emerald-400 focus:border-emerald-500 transition-all text-sm font-medium"
-                      />
-                    )}
-                    {errors[field] && (
-                      <span className="text-red-500 text-xs">{errors[field]}</span>
-                    )}
+                    <input
+                      type="text"
+                      step="any"
+                      onKeyDown={(e) => handleKeyDown(e, field)}
+                      onWheel={(e) => e.target.blur()}
+                      placeholder="0"
+                      value={formData[field]}
+                      onChange={(e) => handleInputChange(field, e.target.value)}
+                      onBlur={(e) => handleBlur(field, e.target.value)}
+                      className="w-full bg-emerald-50 sm:flex-1 sm:max-w-32 px-3 py-2 sm:px-4 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 sm:focus:ring-3 focus:ring-emerald-400 focus:border-emerald-500 transition-all text-sm font-medium"
+                    />
+                    {errors[field] && <span className="text-red-500 text-xs">{errors[field]}</span>}
                     <span className="text-xs sm:text-sm">{indata}</span>
                   </div>
                 ))}
-
-
                 <button
                   onClick={calculateResults}
                   className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-3 sm:py-4 px-4 sm:px-6 rounded-lg sm:rounded-xl transition-all transform hover:scale-[1.02] shadow-lg sm:shadow-xl hover:shadow-xl sm:hover:shadow-2xl text-sm sm:text-base"
@@ -219,7 +208,8 @@ const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString(
               </div>
             </div>
           </div>
-          {/* Image slider (images changed for beam context) */}
+
+          {/* Image slider */}
           <div className="p-4">
             <div className="bg-white rounded-xl shadow-lg overflow-hidden relative">
               <div
@@ -227,18 +217,30 @@ const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString(
                 style={{ transform: `translateX(-${currentImage * 100}%)` }}
               >
                 {flooringImages.map((image, index) => (
-                  <img key={index} src={image} alt="" className="w-full h-64 object-contain flex-shrink-0" />
+                  <img
+                    key={index}
+                    src={image}
+                    alt=""
+                    className="w-full h-64 object-contain flex-shrink-0"
+                  />
                 ))}
               </div>
-              <button onClick={previousImage} className="absolute left-2 top-1/2 -translate-y-1/2 bg-white p-1 rounded-full shadow">
+              <button
+                onClick={previousImage}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white p-1 rounded-full shadow"
+              >
                 <MdChevronLeft />
               </button>
-              <button onClick={nextImage} className="absolute right-2 top-1/2 -translate-y-1/2 bg-white p-1 rounded-full shadow">
+              <button
+                onClick={nextImage}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white p-1 rounded-full shadow"
+              >
                 <MdChevronRight />
               </button>
             </div>
           </div>
         </div>
+
         {/* Results Section */}
         <div className="p-4 md:p-6 lg:p-8">
           <div className="bg-white rounded-2xl md:rounded-3xl shadow-xl overflow-hidden">
@@ -249,15 +251,13 @@ const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString(
                 Calculation Results
               </h2>
               <p className="text-xs md:text-sm lg:text-base text-blue-100 mt-1 md:mt-2">
-                Material quantities required for your project
+                Material quantities required for your sunshade
               </p>
             </div>
             <div className="p-4 md:p-6 lg:p-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-8">
-
-                {/* Steel 16mm */}
+                {/* Steel 10mm */}
                 <div className="bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-200 rounded-xl md:rounded-2xl p-4 md:p-6">
-                  {/* Header */}
                   <div className="flex items-center mb-3 md:mb-4">
                     <div className="w-9 h-9 md:w-12 md:h-12 bg-orange-500 rounded-lg md:rounded-xl flex items-center justify-center mr-3 md:mr-4">
                       <GiSteelClaws className="w-4 h-4 md:w-6 md:h-6 text-white" />
@@ -265,26 +265,23 @@ const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString(
                     <h3 className="text-base md:text-lg font-bold text-gray-800">Steel Quantity</h3>
                   </div>
 
-                  {/* Steel rows */}
                   <div className="space-y-2 md:space-y-3">
-                    {/* 16mm */}
+                    {/* 10 mm */}
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-700">Steel Quantity 16mm (Main Bars)</span>
-                      <span className="font-bold text-orange-600">{results.steel16mm} kg</span>
+                      <span className="text-gray-700">Steel Quantity {formData.diameterMainBar || 10} mm (Main Bars)</span>
+                      <span className="font-bold text-orange-600">{results.steel10mm} kg</span>
                     </div>
 
-                    {/* 8mm */}
+                    {/* 8 mm */}
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-700">Steel Quantity 8mm (Stirrups)</span>
+                      <span className="text-gray-700">Steel Quantity {formData.diameterDistBar || 8} mm (Distribution Bars)</span>
                       <span className="font-bold text-orange-600">{results.steel8mm} kg</span>
                     </div>
 
-                    {/* Total */}
+                    {/* Total steel */}
                     <div className="flex justify-between text-sm md:text-base border-t border-orange-200 pt-2 md:pt-3">
                       <span className="text-gray-900 font-semibold">Total Steel</span>
-                      <span className="font-bold text-red-600">
-                        {totalsteel} kg
-                      </span>
+                      <span className="font-bold text-red-600">{totalSteel} kg</span>
                     </div>
                   </div>
                 </div>
@@ -306,62 +303,48 @@ const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString(
                   </div>
                 </div>
               </div>
+
               {/* Summary */}
               <div className="mt-6 md:mt-8 p-4 md:p-6 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl md:rounded-2xl border border-emerald-200">
                 <h4 className="text-base md:text-lg font-bold text-emerald-800 mb-2 md:mb-3">Project Summary</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 text-xs md:text-sm">
                   <div>
-                    <span className="text-gray-600">Length:</span>
-                    <span className="font-semibold text-gray-800 ml-1 md:ml-2">{formData.L} m</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Steel 16mm:</span>
-                    <span className="font-semibold text-orange-600 ml-1 md:ml-2">{results.steel16mm} kg</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">TotalSteel:</span>
-                    <span className="font-semibold text-orange-600 ml-1 md:ml-2">{totalsteel} kg</span>
+                    <span className="text-gray-600">Steel 10mm:</span>
+                    <span className="font-semibold text-orange-600 ml-1 md:ml-2">{results.steel10mm} kg</span>
                   </div>
                   <div>
                     <span className="text-gray-600">Steel 8mm:</span>
                     <span className="font-semibold text-orange-600 ml-1 md:ml-2">{results.steel8mm} kg</span>
                   </div>
                   <div>
+                    <span className="text-gray-600">Total Steel:</span>
+                    <span className="font-semibold text-orange-600 ml-1 md:ml-2">{totalSteel} kg</span>
+                  </div>
+                  <div>
                     <span className="text-gray-600">Concrete:</span>
                     <span className="font-semibold text-gray-600 ml-1 md:ml-2">{results.concrete} cu.m</span>
                   </div>
-                  <div>
-                    <span className="text-gray-600">cement:</span>
-                    <span className="font-semibold text-emerald-600 ml-1 md:ml-2">{results.cement} bages</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">fine aggregate (M sand):</span>
-                    <span className="font-semibold text-emerald-600 ml-1 md:ml-2">{results.fineaggregate} m³</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">coures aggregate(metal):</span>
-                    <span className="font-semibold text-emerald-600 ml-1 md:ml-2">{results.couresaggregate} m³</span>
-                  </div>
                 </div>
               </div>
-            </div>
-            {/* Action Buttons unchanged */}
-            <div className="mt-6 md:mt-8 p-4 md:p-6 bg-gray-50">
-              <div className="flex justify-center space-x-3 md:space-x-4">
-                <button className="flex items-center bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-4 py-2 md:px-6 md:py-3 rounded-lg md:rounded-xl font-semibold text-sm md:text-base transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
-                  <FaPlusCircle className="w-4 h-4 md:w-5 md:h-5 mr-2" />
-                  Add
-                </button>
-                <button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 md:px-6 md:py-3 rounded-lg md:rounded-xl font-semibold text-sm md:text-base transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
-                  Next
-                </button>
+
+              {/* Action Buttons */}
+              <div className="mt-6 md:mt-8 p-4 md:p-6 bg-gray-50">
+                <div className="flex justify-center space-x-3 md:space-x-4">
+                  <button className="flex items-center bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-4 py-2 md:px-6 md:py-3 rounded-lg md:rounded-xl font-semibold text-sm md:text-base transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
+                    <FaPlusCircle className="w-4 h-4 md:w-5 md:h-5 mr-2" />
+                    Add
+                  </button>
+                  <button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 md:px-6 md:py-3 rounded-lg md:rounded-xl font-semibold text-sm md:text-base transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
+                    Next
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      {/* Desktop layout also update the text and output as above, paralleling mobile */}
-      {/* ... (repeat the same change logic for the lg:block desktop layout as above) ... */}
+
+      {/* Desktop layout */}
       <div className="hidden lg:block h-full">
         <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-2 p-2">
           {/* Calculator Section */}
@@ -369,7 +352,7 @@ const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString(
             <div className="px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 flex-shrink-0">
               <div className="flex items-center">
                 <FaCalculator className="w-6 h-6 text-white mr-2" />
-                <h1 className="text-lg font-bold text-white">Beam</h1>
+                <h1 className="text-lg font-bold text-white">Sunshade</h1>
               </div>
             </div>
             <div className="px-4 py-2 bg-emerald-50 border-b border-emerald-100 flex-shrink-0">
@@ -379,53 +362,39 @@ const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString(
             </div>
             <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
               {[
-                { label: 'Length L', indata: ' m', field: 'L', inputType: "text" },
-                { label: 'Breadth B', indata: ' m', field: 'B', inputType: "text" },
-                { label: 'Height H', indata: ' m', field: 'H', inputType: "text" },
-                { label: 'Diameter of Main Bar', indata: ' mm', field: 'diameterMainBar', inputType: "select", options: diameterMainBarOptions },
-                { label: 'No. of Main Bar', indata: ' nos', field: 'noOfMainBar', inputType: "select", options: noOfMainBarOptions },
-                { label: 'Diameter of Stirrups', indata: ' mm', field: 'diameterStirrups', inputType: "select", options: diameterStirrupsOptions },
-                { label: 'Spacing of Stirrups', indata: ' m', field: 'spacingStirrups', inputType: "text" },
-              ].map(({ label, field, indata, inputType, options }) => (
+                { label: "Length L", indata: " m", field: "L" },
+                { label: "Breadth B", indata: " m", field: "B" },
+                { label: "Height H1", indata: " m", field: "H1" },
+                { label: "Height H2", indata: " m", field: "H2" },
+                { label: "Diameter of Main Bar", indata: " mm", field: "diameterMainBar" },
+                { label: "Spacing of Main Bar", indata: " m", field: "spacingMainBar" },
+                { label: "Diameter of Distribution Bar", indata: " mm", field: "diameterDistBar" },
+                { label: "Spacing of Distribution Bar", indata: " m", field: "spacingDistBar" },
+              ].map(({ label, field, indata }) => (
                 <div key={field} className="flex flex-col space-y-1">
                   <div className="flex items-center space-x-2">
                     <label className="text-xs font-medium text-gray-700 flex items-center w-40 flex-shrink-0">
                       <GoDotFill className="w-6 h-3 mr-1 text-emerald-600" />
                       {label}
                     </label>
-                    {inputType === "select" ? (
-                      <select
-                        className="w-20 bg-emerald-50  px-2 py-1 border border-gray-200 rounded focus:ring-1 focus:ring-emerald-400 focus:border-emerald-500 text-xs"
-                        value={formData[field]}
-                        onChange={(e) => handleInputChange(field, e.target.value)}
-                        onBlur={(e) => handleBlur(field, e.target.value)}
-                      >
-                        <option value="">Select</option>
-                        {options.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        step="any"
-                        placeholder="0"
-                        value={formData[field]}
-                        onWheel={(e) => e.target.blur()}
-                        onKeyDown={(e) => handleKeyDown(e, field)}
-                        onChange={(e) => handleInputChange(field, e.target.value)}
-                        onBlur={(e) => handleBlur(field, e.target.value)}
-                        className={`w-20 bg-emerald-50 px-2 py-1 border rounded text-xs focus:ring-1 
-                        ${errors[field] ? "border-red-500 focus:ring-red-400" : "border-gray-200 focus:ring-emerald-400 focus:border-emerald-500"}`}
-                      />
-                    )}
-                    <div className="text-xs font-medium text-gray-700 flex items-center w-24 flex-shrink-0">
-                      {indata}
-                    </div>
+                    <input
+                      type="text"
+                      step="any"
+                      placeholder="0"
+                      value={formData[field]}
+                      onWheel={(e) => e.target.blur()}
+                      onKeyDown={(e) => handleKeyDown(e, field)}
+                      onChange={(e) => handleInputChange(field, e.target.value)}
+                      onBlur={(e) => handleBlur(field, e.target.value)}
+                      className={`w-20 bg-emerald-50 px-2 py-1 border rounded text-xs focus:ring-1 ${
+                        errors[field]
+                          ? "border-red-500 focus:ring-red-400"
+                          : "border-gray-200 focus:ring-emerald-400 focus:border-emerald-500"
+                      }`}
+                    />
+                    <div className="text-xs font-medium text-gray-700 flex items-center w-24 flex-shrink-0">{indata}</div>
                   </div>
-                  {errors[field] && (
-                    <span className="text-[10px] text-red-500 ml-40">{errors[field]}</span>
-                  )}
+                  {errors[field] && <span className="text-[10px] text-red-500 ml-40">{errors[field]}</span>}
                 </div>
               ))}
               <div className="px-4 py-3 flex-shrink-0">
@@ -466,9 +435,8 @@ const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString(
               <p className="text-blue-100 text-xs mt-1">Material quantities required</p>
             </div>
             <div className="flex-1 p-4 space-y-4">
-              {/* Steel 16mm */}
+              {/* Steel 10mm */}
               <div className="bg-gradient-to-br from-orange-50 to-red-50 border border-orange-200 rounded-lg p-4">
-                {/* Header */}
                 <div className="flex items-center mb-3">
                   <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center mr-3">
                     <GiSteelClaws className="w-4 h-4 text-white" />
@@ -476,22 +444,21 @@ const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString(
                   <h3 className="text-sm font-bold text-gray-800">Steel Quantity</h3>
                 </div>
 
-                {/* Steel details */}
                 <div className="space-y-2">
-                  {/* 16mm */}
+                  {/* 10 mm */}
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-700">Steel Quantity 16mm</span>
-                    <span className="font-bold text-orange-600">{results.steel16mm} kg</span>
+                    <span className="text-gray-700">Steel Quantity {formData.diameterMainBar || 10}mm</span>
+                    <span className="font-bold text-orange-600">{results.steel10mm} kg</span>
                   </div>
-                  {/* 8mm */}
+                  {/* 8 mm */}
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-700">Steel Quantity 8mm</span>
+                    <span className="text-gray-700">Steel Quantity {formData.diameterDistBar || 8}mm</span>
                     <span className="font-bold text-orange-600">{results.steel8mm} kg</span>
                   </div>
                   {/* Total */}
                   <div className="flex justify-between text-sm border-t border-orange-200 pt-2">
                     <span className="text-gray-900 font-semibold">Total Steel</span>
-                    <span className="font-bold text-red-600">{totalsteel} kg</span>
+                    <span className="font-bold text-red-600">{totalSteel} kg</span>
                   </div>
                 </div>
               </div>
@@ -512,44 +479,30 @@ const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString(
                   <div className="text-gray-500 font-medium text-sm">cu.m</div>
                 </div>
               </div>
+
               {/* Project Summary */}
               <div className="p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
                 <h4 className="text-sm font-bold text-emerald-800 mb-2">Summary</h4>
                 <div className="grid grid-cols-1 gap-1 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Length:</span>
-                    <span className="font-semibold text-gray-800">{formData.L} m</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Steel 16mm:</span>
-                    <span className="font-semibold text-orange-600">{results.steel16mm} kg</span>
+                    <span className="text-gray-600">Steel 10mm:</span>
+                    <span className="font-semibold text-orange-600">{results.steel10mm} kg</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Steel 8mm:</span>
                     <span className="font-semibold text-orange-600">{results.steel8mm} kg</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">TotalSteel:</span>
-                    <span className="font-semibold text-orange-600">{totalsteel} kg</span>
+                    <span className="text-gray-600">Total Steel:</span>
+                    <span className="font-semibold text-orange-600">{totalSteel} kg</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Concrete:</span>
                     <span className="font-semibold text-gray-600">{results.concrete} cu.m</span>
                   </div>
-                    <div className="flex justify-between">
-                    <span className="text-gray-600">cement:</span>
-                    <span className="font-semibold text-emerald-600">{results.cement} bags</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">fine aggregate(m sand):</span>
-                    <span className="font-semibold text-emerald-600">{results.fineaggregate} m³</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">coures aggregate (metal):</span>
-                    <span className="font-semibold text-emerald-600">{results.couresaggregate} m³</span>
-                  </div>
                 </div>
               </div>
+
               <div className="p-3 bg-gray-50 flex justify-center space-x-2 flex-shrink-0">
                 <button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-3 py-2 rounded font-medium transition-all text-xs">
                   <FaPlusCircle className="w-3 h-3 mr-1 inline" />
@@ -563,10 +516,8 @@ const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString(
           </div>
         </div>
       </div>
-
     </div>
   );
 }
 
-
-export default Beem;
+export default Sunshade;

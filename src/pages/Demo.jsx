@@ -1,348 +1,399 @@
-import React, { useEffect, useState } from 'react';
-import { FaCalculator, FaRuler, FaHome, FaWrench, FaHammer, FaPlusCircle } from "react-icons/fa";
+import React, { useState } from "react";
+import { FaCalculator, FaPlusCircle, FaInfoCircle } from "react-icons/fa";
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
-import footings1 from '../assets/footings1.jpg'
-import footings2 from '../assets/footings2.jpg'
-import footings3 from '../assets/footings3.jpg'
-import footings4 from '../assets/footings4.jpg'
-import { GoDotFill } from 'react-icons/go';
-import { GiConcreteBag, GiSteelClaws } from 'react-icons/gi';
-function Beem() {
+import footings1 from "../assets/footings1.jpg";
+import footings2 from "../assets/footings2.jpg";
+import footings3 from "../assets/footings3.jpg";
+import footings4 from "../assets/footings4.jpg";
+import { GoDotFill } from "react-icons/go";
+
+function RubbleCalculator() {
   const [currentImage, setCurrentImage] = useState(0);
+
+  // Form state with rubble inputs and ratio
   const [formData, setFormData] = useState({
-    numberOfFootings: "",
     L: "",
     W: "",
     H: "",
-    l: "",
     w: "",
     h: "",
-    diameterMat: "",
-    spacing: ""
+    R1: "",
+    R2: "",
+    voidpers: "",
   });
 
+  const [errors, setErrors] = useState({});
   const [results, setResults] = useState({
-    steelQuantity: 0,
-    concreteQuantity: 0
+    volumeRubbleFoundation: "0",
+    volumeMortarFoundation: "0",
+    volumeRubblePlinth: "0",
+    volumeMortarPlinth: "0"
   });
 
-  const flooringImages = [footings1, footings2, footings3, footings4];
+  const blockImages = [footings1, footings2, footings3, footings4];
+  const decimalFields = ["L", "W", "H", "w", "h"];
+  const [showVoidInfo, setShowVoidInfo] = useState(false);
+  const [showVoidInfo1, setShowVoidInfo1] = useState(false);
+  const [showVoidInfo2, setShowVoidInfo2] = useState(false);
 
-  const nextImage = () => {
-    setCurrentImage((prev) => (prev + 1) % flooringImages.length);
-  };
-
-  const previousImage = () => {
-    setCurrentImage((prev) => (prev - 1 + flooringImages.length) % flooringImages.length);
-  };
-
-  const decimalFields = ["L", "W", "H", "l", "w", "h", "spacing"];
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value   // keep raw string
-    }));
-  };
-
-  const handleBlur = (field, value) => {
-    if (decimalFields.includes(field)) {
-      let formatted = value;
-      if (value === ".") {
-        formatted = "0.0";
-      } else if (value.startsWith(".")) {
-        formatted = `0${value}`;
+  // Validate inputs
+  const validateForm = () => {
+    const newErrors = {};
+    decimalFields.forEach((field) => {
+      if (!formData[field] || parseFloat(formData[field]) <= 0) {
+        newErrors[field] = `Enter valid ${field}`;
       }
-      setFormData(prev => ({
-        ...prev,
-        [field]: formatted
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [field]: value
-      }));
+    });
+    if (!formData.R1 || !formData.R2) {
+      newErrors.R2 = "Select Ratio";
+    }
+    if (!formData.voidpers) {
+      newErrors.voidpers = "Select void percentage";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Input change handler
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Input blur formatting for decimals
+  const handleBlur = (field, value) => {
+    let formatted = value;
+    if (decimalFields.includes(field)) {
+      if (value === ".") formatted = "0.0";
+      else if (value.startsWith(".")) formatted = `0${value}`;
+    }
+    setFormData((prev) => ({ ...prev, [field]: formatted }));
+  };
+
+  // Key down validation
+  const handleKeyDown = (e, field) => {
+    if (decimalFields.includes(field)) {
+      if (
+        e.key === "Backspace" ||
+        e.key === "Delete" ||
+        e.key === "Tab" ||
+        e.key === "Enter" ||
+        e.key === "Escape" ||
+        (e.key >= "0" && e.key <= "9") ||
+        e.key === "." ||
+        e.key === "-"
+      ) {
+        return;
+      }
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+        e.preventDefault();
+      } else {
+        e.preventDefault();
+      }
     }
   };
 
+  // Calculate results based on rubble formulas and mortar ratio
   const calculateResults = () => {
-    const { numberOfFootings, L, W, H, l, w, h, diameterMat, spacing } = formData;
+    if (!validateForm()) return;
 
-    // parse safely
-    const n = parseInt(numberOfFootings) || 0;
-    const Lm = parseFloat(L) || 0;
-    const Wm = parseFloat(W) || 0;
-    const Hm = parseFloat(H) || 0;
-    const lm = parseFloat(l) || 0;
-    const wm = parseFloat(w) || 0;
-    const hm = parseFloat(h) || 0;
-    const d = parseFloat(diameterMat) || 0;
-    const s = parseFloat(spacing) || 1; // avoid /0
+    const { L, W, H, w, h, R1, R2, voidpers } = Object.fromEntries(
+      Object.entries(formData).map(([k, v]) => [k, parseFloat(v)])
+    );
 
-    // Steel formula
-    const steelQuantity =
-      ((((Lm / s) + 1) * Wm + ((Wm / s) + 1) * Lm) *
-        ((d * d) / 162)) *
-      n;
+    const wastage = 0.05; // 5% wastage allowance
+    const mortarProportion = 0.35; // 35% of rubble volume is mortar volume
 
-    // Concrete formula
-    const concreteQuantity =
-      (Lm * Wm * Hm * n) +
-      ((hm / 3) * ((Lm * Wm) + (lm * wm) + Math.sqrt(Lm * Wm * lm * wm)) * n);
+    // Foundation rubble volume including wastage
+    const volumeFoundation = L * W * H;
+    const volumeFoundationWastage = volumeFoundation * (1 + wastage);
 
+    // Mortar volume for foundation
+    const volumeMortarFoundation = volumeFoundationWastage * mortarProportion;
+
+    // Plinth rubble volume including wastage
+    const volumePlinth = L * w * h;
+    const volumePlinthWastage = volumePlinth * (1 + wastage);
+
+    // Mortar volume for plinth
+    const volumeMortarPlinth = volumePlinthWastage * mortarProportion;
+
+    // Total mortar volume
+    const totalMortarVolume = volumeMortarFoundation + volumeMortarPlinth;
+    
+    const totalMortarper = totalMortarVolume * (voidpers / 100)
+
+    // Cement and sand volumes from ratio
+    const totalRatio = R1 + R2;
+    const cementVolume = (totalMortarper * R1) / totalRatio;
+    const sandVolume = (totalMortarper * R2) / totalRatio;
+    const cementbag = (cementVolume * 1440) / 50
+    // Store results rounded
     setResults({
-      steelQuantity: steelQuantity.toFixed(2),
-      concreteQuantity: concreteQuantity.toFixed(2)
+      volumeRubbleFoundation:( volumeFoundationWastage*(80/100)).toFixed(2),
+      volumeMortarFoundation: volumeMortarFoundation.toFixed(2),
+      volumeRubblePlinth:( volumePlinthWastage*(80/100)).toFixed(2),
+      volumeMortarPlinth: volumeMortarPlinth.toFixed(2),
+      cementVolume: cementVolume.toFixed(2),
+      sandVolume: sandVolume.toFixed(2),
+      cementbag: cementbag.toFixed(2),
     });
   };
 
-  // optional: auto-calc on every input change
-  const handleKeyDown = (e, field) => {
-    // Allow normal typing, backspace, delete, tab, enter, escape
-      if (decimalFields.includes(field) || field === "numberOfFootings" || field === "spacing") {
-    if (
-      e.key === 'Backspace' ||
-      e.key === 'Delete' ||
-      e.key === 'Tab' ||
-      e.key === 'Enter' ||
-      e.key === 'Escape' ||
-      (e.key >= '0' && e.key <= '9') ||
-      e.key === '.' ||
-      e.key === '-'
-    ) {
-      return; // Allow these keys
-    }
-
-    // Prevent arrow keys and other navigation keys from changing the value
-    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-      e.preventDefault();
-    }else{
-      e.preventDefault();
-    }
-  }
+  const nextImage = () => {
+    setCurrentImage((prev) => (prev + 1) % blockImages.length);
   };
+  const previousImage = () => {
+    setCurrentImage((prev) => (prev - 1 + blockImages.length) % blockImages.length);
+  };
+
   return (
-    <div className="min-h-screen md:h-screen bg-gradient-to-br from-gray-50 to-gray-100 lg:overflow-hidden">
-      {/* Mobile Layout (Original) */}
-      <div className="lg:hidden">
-        <div className="flex flex-col lg:flex-row">
-          {/* Calculator Section */}
-          <div className="w-full lg:w-1/2 p-6 lg:p-8">
-            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
-              {/* Header */}
-              <div className="p-6 lg:p-8 bg-gradient-to-r from-emerald-500 to-teal-600">
-                <div className="flex items-center mb-2">
-                  <FaCalculator className="w-8 h-8 text-white mr-3" />
-                  <h1 className="text-2xl lg:text-3xl font-bold text-white">Sloped Footings</h1>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="p-6 bg-emerald-50 border-b border-emerald-100">
-                <p className="text-sm text-emerald-800 leading-relaxed">
-                  Providing and laying manually batched, machine-mixed M-25 grade design mix concrete for RCC works,
-                  including pumping, centering, shuttering, finishing, and approved admixtures as per IS:9103 to modify
-                  setting time and improve workability, including reinforcement, as directed by the Engineer-in-charge.
-                </p>
-              </div>
-
-              {/* Input Fields */}
-              <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
-                {[
-                  { label: 'Footings', indata: ' (nos)', field: 'numberOfFootings', },
-                  { label: 'L', indata: ' (m)', field: 'L', },
-                  { label: 'W', indata: ' (m)', field: 'W', },
-                  { label: 'H', indata: ' (m)', field: 'H', },
-                  { label: 'l', indata: ' (m)', field: 'l', },
-                  { label: 'w', indata: ' (m)', field: 'w', },
-                  { label: 'h ', indata: '(m)', field: 'h', },
-
-                ].map(({ label, field, step, indata }) => (
-                  <div key={field} className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                    <label className="text-sm font-semibold text-gray-700 flex items-center sm:w-56 sm:flex-shrink-0">
-                      <GoDotFill className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-emerald-600 flex-shrink-0" />
-                      <span className="text-xs sm:text-sm">{label}</span>
-                    </label>
-                    <input
-                      type="text"
-                      step="any"
-                      onKeyDown={(e) => handleKeyDown(e, field)}
-
-                      onWheel={(e) => e.target.blur()}
-                      placeholder="0"
-                      value={formData[field]}
-                      onChange={(e) => handleInputChange(field, e.target.value)}
-                      onBlur={(e) => handleBlur(field, e.target.value)}
-
-                      className="w-full bg-emerald-50  sm:flex-1 sm:max-w-32 px-3 py-2 sm:px-4 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 sm:focus:ring-3 focus:ring-emerald-400 focus:border-emerald-500 transition-all text-sm font-medium"
-                    />
-                    <span className="text-xs sm:text-sm">{indata}</span>
+    <>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        {/* Mobile and Tablet Layout */}
+        <div className="lg:hidden">
+          <div className="flex flex-col">
+            {/* Calculator Section */}
+            <div className="w-full p-4 sm:p-6">
+              <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl overflow-hidden">
+                {/* Header */}
+                <div className="p-4 sm:p-6 bg-gradient-to-r from-emerald-500 to-teal-600">
+                  <div className="flex items-center">
+                    <FaCalculator className="w-6 h-6 sm:w-8 sm:h-8 text-white mr-2 sm:mr-3" />
+                    <h1 className="text-xl sm:text-2xl font-bold text-white">Rubble Calculator</h1>
                   </div>
-                ))}
-                <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                  <label className="text-sm font-semibold text-gray-700 flex items-center sm:w-56 sm:flex-shrink-0">
-                    <GoDotFill className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-emerald-600 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm">Diameter of mat</span>
-                  </label>
-                  <select onChange={(e) => handleInputChange("diameterMat", e.target.value)}
-                    className="w-full bg-emerald-50  sm:flex-1 sm:max-w-32 px-3 py-2 sm:px-4 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 sm:focus:ring-3 focus:ring-emerald-400 focus:border-emerald-500 transition-all text-sm font-medium"
-                    value={formData['diameterMat'] || ''}>
-                    <option hidden>select  </option>
-                    <option value="6">6</option>
-                    <option value="8">8</option>
-                    <option value="10">10</option>
-                    <option value="12">12</option>
-                    <option value="16">16</option>
-                    <option value="20">20</option>
-                    <option value="32">32</option>
-                  </select>
-                  <span className="text-xs sm:text-sm">  (mm)</span>
                 </div>
-
-                <div key={'spacing'} className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                  <label className="text-sm font-semibold text-gray-700 flex items-center sm:w-56 sm:flex-shrink-0">
-                    <GoDotFill className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-emerald-600 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm"> Spacing of mat</span>
-                  </label>
-                  <input
-                    type="text"
-                    step="any"
-                    onWheel={(e) => e.target.blur()}
-                    placeholder="0"
-                    value={formData['spacing']}
-                    onChange={(e) => handleInputChange('spacing', e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(e, "spacing")}
-
-                    onBlur={(e) => handleBlur('spacing', e.target.value)}
-
-                    className="w-full bg-emerald-50  sm:flex-1 sm:max-w-32 px-3 py-2 sm:px-4 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 sm:focus:ring-3 focus:ring-emerald-400 focus:border-emerald-500 transition-all text-sm font-medium"
-                  />
-                  <span className="text-xs sm:text-sm">(m)</span>
+                {/* Description */}
+                <div className="p-4 sm:p-6 bg-emerald-50 border-b border-emerald-100">
+                  <p className="text-xs sm:text-sm text-emerald-800 leading-relaxed">
+                    Calculate rubble and mortar volumes for foundation and plinth courses including wastage and mortar ratio.
+                  </p>
                 </div>
+                {/* Input Fields */}
+                <div className="p-4 sm:p-6 space-y-4">
+                  {[{ label: "Total Length (L)", field: "L", unit: "m" },
+                  { label: "Width foundation (W)", field: "W", unit: "m" },
+                  { label: "Height foundation (H)", field: "H", unit: "m" },
+                  { label: "Width plinth (w)", field: "w", unit: "m" },
+                  { label: "Height plinth (h)", field: "h", unit: "m" }].map(({ label, field, unit }) => (
+                    <div key={field} className="space-y-2">
+                      <label className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center">
+                        <GoDotFill className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 text-emerald-600 flex-shrink-0" />
+                        <span>{label}</span>
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          step="any"
+                          onKeyDown={(e) => handleKeyDown(e, field)}
+                          onWheel={(e) => e.target.blur()}
+                          placeholder="0"
+                          value={formData[field]}
+                          onChange={(e) => handleInputChange(field, e.target.value)}
+                          onBlur={(e) => handleBlur(field, e.target.value)}
+                          className={`flex-1 bg-emerald-50 px-3 py-2 border-2 ${
+                            errors[field] ? 'border-red-500' : 'border-gray-200'
+                          } rounded-lg sm:rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-500 transition-all text-sm font-medium`}
+                        />
+                        <span className="text-xs sm:text-sm font-medium text-gray-600 w-8">{unit}</span>
+                      </div>
+                      {errors[field] && <span className="text-red-500 text-xs ml-2">{errors[field]}</span>}
+                    </div>
+                  ))}
+                  
+                  {/* Ratio Input */}
+                  <div className="space-y-2">
+                    <label className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center">
+                      <GoDotFill className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 text-emerald-600 flex-shrink-0" />
+                      <span>Mortar Ratio</span>
+                    </label>
+                    <select
+                      onChange={(e) => {
+                        const [r1, r2] = e.target.value.split(":").map(Number);
+                        setFormData((prev) => ({ ...prev, R1: r1, R2: r2 }));
+                      }}
+                      className={`w-full bg-emerald-50 px-3 py-2 border-2 ${
+                        errors.R2 ? 'border-red-500' : 'border-gray-200'
+                      } rounded-lg sm:rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-500 transition-all text-sm font-medium`}
+                      value={formData.R1 && formData.R2 ? `${formData.R1}:${formData.R2}` : ""}
+                    >
+                      <option hidden>select</option>
+                      <option value="1:3">1:3</option>
+                      <option value="1:4">1:4</option>
+                      <option value="1:5">1:5</option>
+                      <option value="1:6">1:6</option>
+                    </select>
+                    {errors.R2 && <span className="text-red-500 text-xs ml-2">{errors.R2}</span>}
+                  </div>
 
-                {/* Calculate Button */}
-                <button
-                  onClick={calculateResults}
-                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-3 sm:py-4 px-4 sm:px-6 rounded-lg sm:rounded-xl transition-all transform hover:scale-[1.02] shadow-lg sm:shadow-xl hover:shadow-xl sm:hover:shadow-2xl text-sm sm:text-base"
+                  {/* Void Percentage */}
+                  <div className="space-y-2">
+                    <label className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center">
+                      <GoDotFill className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 text-emerald-600 flex-shrink-0" />
+                      <span>Voids filled with mortar</span>
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <select 
+                          onChange={(e) => handleInputChange("voidpers", e.target.value)}
+                          className={`w-full bg-emerald-50 px-3 py-2 pr-10 border-2 ${
+                            errors.voidpers ? 'border-red-500' : 'border-gray-200'
+                          } rounded-lg sm:rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-500 transition-all text-sm font-medium`}
+                          value={formData.voidpers || ''}
+                        >
+                          <option hidden>select</option>
+                          <option value="50">50</option>
+                          <option value="60">60</option>
+                          <option value="70">70</option>
+                          <option value="80">80</option>
+                        </select>
+                        <button 
+                          type="button"
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-emerald-600 transition-colors"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setShowVoidInfo(!showVoidInfo);
+                          }}
+                        >
+                          <FaInfoCircle className="w-4 h-4" />
+                        </button>
+                        {showVoidInfo && (
+                          <div className="absolute z-50 right-0 sm:left-0 mt-2 w-56 sm:w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl">
+                            <button 
+                              onClick={() => setShowVoidInfo(false)}
+                              className="absolute right-2 top-2 text-white hover:text-gray-300"
+                            >
+                              ×
+                            </button>
+                            <div className="pr-4">
+                              In rubble masonry, the total void space between stones is considered as 100%.
+                              Selecting 60% means 60% of these voids are filled with mortar, while the remaining 40% remain unfilled (air voids) between the stones.
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-xs sm:text-sm font-medium text-gray-600 w-8">%</span>
+                    </div>
+                    {errors.voidpers && <span className="text-red-500 text-xs ml-2">{errors.voidpers}</span>}
+                  </div>
+
+                  {/* Calculate Button */}
+                  <button
+                    onClick={calculateResults}
+                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-lg sm:rounded-xl transition-all transform hover:scale-[1.02] shadow-lg hover:shadow-xl text-sm sm:text-base"
+                  >
+                    <FaCalculator className="w-4 h-4 sm:w-5 sm:h-5 mr-2 inline" />
+                    Calculate Quantities
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Image Slider Section */}
+            <div className="p-4 sm:p-6">
+              <div className="bg-white rounded-xl shadow-lg overflow-hidden relative">
+                <div
+                  className="flex transition-transform duration-500 ease-in-out"
+                  style={{ transform: `translateX(-${currentImage * 100}%)` }}
                 >
-                  <FaCalculator className="w-4 h-4 sm:w-5 sm:h-5 mr-2 inline" />
-                  Calculate Quantities
+                  {blockImages.map((image, index) => (
+                    <img key={index} src={image} alt="" className="w-full h-48 sm:h-64 object-contain flex-shrink-0" />
+                  ))}
+                </div>
+                <button onClick={previousImage} className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 p-1.5 rounded-full shadow-lg hover:bg-white">
+                  <MdChevronLeft className="w-5 h-5" />
+                </button>
+                <button onClick={nextImage} className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 p-1.5 rounded-full shadow-lg hover:bg-white">
+                  <MdChevronRight className="w-5 h-5" />
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Image Slider Section */}
-
-          {/* Image Slider */}
-          <div className="p-4">
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden relative">
-              <div
-                className="flex transition-transform duration-500 ease-in-out"
-                style={{ transform: `translateX(-${currentImage * 100}%)` }}
-              >
-                {flooringImages.map((image, index) => (
-                  <img key={index} src={image} alt="" className="w-full h-64 object-contain flex-shrink-0" />
-                ))}
+          {/* Results Section */}
+          <div className="p-4 sm:p-6">
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+              {/* Results Header */}
+              <div className="p-4 sm:p-6 bg-gradient-to-r from-blue-600 to-indigo-600">
+                <h2 className="text-lg sm:text-xl font-bold text-white flex items-center">
+                  <FaCalculator className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
+                  Calculation Results
+                </h2>
+                <p className="text-xs sm:text-sm text-blue-100 mt-1">
+                  Material quantities required for your rubble project
+                </p>
               </div>
-              <button onClick={previousImage} className="absolute left-2 top-1/2 -translate-y-1/2 bg-white p-1 rounded-full shadow">
-                <MdChevronLeft />
-              </button>
-              <button onClick={nextImage} className="absolute right-2 top-1/2 -translate-y-1/2 bg-white p-1 rounded-full shadow">
-                <MdChevronRight />
-              </button>
-            </div>
-          </div>
-
-
-        </div>
-
-        {/* Results Section */}
-        <div className="p-4 md:p-6 lg:p-8">
-          <div className="bg-white rounded-2xl md:rounded-3xl shadow-xl overflow-hidden">
-            {/* Results Header */}
-            <div className="p-4 md:p-6 lg:p-8 bg-gradient-to-r from-blue-600 to-indigo-600">
-              <h2 className="text-lg md:text-2xl lg:text-3xl font-bold text-white flex items-center">
-                <FaCalculator className="w-5 h-5 md:w-7 md:h-7 lg:w-8 lg:h-8 mr-2 md:mr-3" />
-                Calculation Results
-              </h2>
-              <p className="text-xs md:text-sm lg:text-base text-blue-100 mt-1 md:mt-2">
-                Material quantities required for your project
-              </p>
-            </div>
-
-            {/* Results Content */}
-            <div className="p-4 md:p-6 lg:p-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-8">
-                {/* Steel Quantity */}
-                <div className="bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-200 rounded-xl md:rounded-2xl p-4 md:p-6 transition-all hover:shadow-lg">
-                  <div className="flex items-center mb-3 md:mb-4">
-                    <div className="w-9 h-9 md:w-12 md:h-12 bg-orange-500 rounded-lg md:rounded-xl flex items-center justify-center mr-3 md:mr-4">
-                      <GiSteelClaws className="w-4 h-4 md:w-6 md:h-6 text-white" />
+              {/* Results Content */}
+              <div className="p-4 sm:p-6">
+                {/* Project Summary */}
+                <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200">
+                  <h4 className="text-sm sm:text-base font-bold text-emerald-800 mb-3">Project Summary</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Rubble volume foundation:</span>
+                      <div className="flex items-center gap-1">
+                        <span className="font-semibold text-gray-800">{results.volumeRubbleFoundation} m³</span>
+                        <button 
+                          type="button"
+                          className="text-gray-400 hover:text-emerald-600"
+                          onClick={() => setShowVoidInfo1(!showVoidInfo1)}
+                        >
+                          <FaInfoCircle className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-base md:text-lg font-bold text-gray-800">Steel Quantity</h3>
-                      <p className="text-xs md:text-sm text-gray-600">10mm Steel Bars</p>
+                    {showVoidInfo1 && (
+                      <div className="col-span-1 sm:col-span-2 p-2 bg-white rounded-lg border border-gray-200 text-xs text-gray-600">
+                        In rubble foundation, 80% of the total volume is considered as rubble stones, and the remaining 20% is assumed as voids (spaces filled with mortar).
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Mortar volume foundation:</span>
+                      <span className="font-semibold text-gray-800">{results.volumeMortarFoundation} m³</span>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xl md:text-3xl font-bold text-orange-600">{results.steelQuantity}</div>
-                    <div className="text-orange-500 font-semibold text-xs md:text-sm">kg</div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Rubble volume plinth:</span>
+                      <div className="flex items-center gap-1">
+                        <span className="font-semibold text-gray-800">{results.volumeRubblePlinth} m³</span>
+                        <button 
+                          type="button"
+                          className="text-gray-400 hover:text-emerald-600"
+                          onClick={() => setShowVoidInfo2(!showVoidInfo2)}
+                        >
+                          <FaInfoCircle className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                    {showVoidInfo2 && (
+                      <div className="col-span-1 sm:col-span-2 p-2 bg-white rounded-lg border border-gray-200 text-xs text-gray-600">
+                        In rubble foundation, 80% of the total volume is considered as rubble stones, and the remaining 20% is assumed as voids (spaces filled with mortar).
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Mortar volume plinth:</span>
+                      <span className="font-semibold text-gray-800">{results.volumeMortarPlinth} m³</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Cement volume:</span>
+                      <span className="font-semibold text-gray-800">{results.cementVolume} m³</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Sand volume:</span>
+                      <span className="font-semibold text-gray-800">{results.sandVolume} m³</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Cement:</span>
+                      <span className="font-semibold text-gray-800">{results.cementbag} bags</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Concrete Quantity */}
-                <div className="bg-gradient-to-br from-gray-50 to-slate-50 border-2 border-gray-200 rounded-xl md:rounded-2xl p-4 md:p-6 transition-all hover:shadow-lg">
-                  <div className="flex items-center mb-3 md:mb-4">
-                    <div className="w-9 h-9 md:w-12 md:h-12 bg-gray-500 rounded-lg md:rounded-xl flex items-center justify-center mr-3 md:mr-4">
-                      <GiConcreteBag className="w-4 h-4 md:w-6 md:h-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-base md:text-lg font-bold text-gray-800">Concrete Quantity</h3>
-                      <p className="text-xs md:text-sm text-gray-600">M-25 Grade Concrete</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xl md:text-3xl font-bold text-gray-600">{results.concreteQuantity}</div>
-                    <div className="text-gray-500 font-semibold text-xs md:text-sm">cu.m</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Additional Info - Project Summary */}
-              <div className="mt-6 md:mt-8 p-4 md:p-6 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl md:rounded-2xl border border-emerald-200">
-                <h4 className="text-base md:text-lg font-bold text-emerald-800 mb-2 md:mb-3">Project Summary</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 text-xs md:text-sm">
-                  <div>
-                    <span className="text-gray-600">Footings:</span>
-                    <span className="font-semibold text-gray-800 ml-1 md:ml-2">{formData.numberOfFootings} nos</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Total Steel:</span>
-                    <span className="font-semibold text-orange-600 ml-1 md:ml-2">{results.steelQuantity} kg</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Total Concrete:</span>
-                    <span className="font-semibold text-gray-600 ml-1 md:ml-2 whitespace-nowrap">
-                      {results.concreteQuantity} cu.m
-                    </span>
-                  </div>
-
-                  <div>
-                    <span className="text-gray-600">Grade:</span>
-                    <span className="font-semibold text-emerald-600 ml-1 md:ml-2">M-25</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="mt-6 md:mt-8 p-4 md:p-6 bg-gray-50">
-                <div className="flex justify-center space-x-3 md:space-x-4">
-                  <button className="flex items-center bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-4 py-2 md:px-6 md:py-3 rounded-lg md:rounded-xl font-semibold text-sm md:text-base transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
-                    <FaPlusCircle className="w-4 h-4 md:w-5 md:h-5 mr-2" />
+                {/* Action Buttons */}
+                <div className="mt-6 flex justify-center gap-3">
+                  <button className="flex items-center bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
+                    <FaPlusCircle className="w-4 h-4 mr-2" />
                     Add
                   </button>
-                  <button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 md:px-6 md:py-3 rounded-lg md:rounded-xl font-semibold text-sm md:text-base transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
+                  <button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
                     Next
                   </button>
                 </div>
@@ -351,215 +402,231 @@ function Beem() {
           </div>
         </div>
 
-      </div>
-
-      {/* Medium+ Layout (No Scroll) */}
-      <div className="hidden lg:block h-full">
-        <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-2 p-2">
-
-          {/* Calculator Section - 1/3 width on large screens */}
-          <div className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col">
-            {/* Header - Fixed Height */}
-            <div className="px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 flex-shrink-0">
-              <div className="flex items-center">
-                <FaCalculator className="w-6 h-6 text-white mr-2" />
-                <h1 className="text-lg font-bold text-white">Sloped Footings</h1>
+        {/* Desktop Layout (lg and above) */}
+        <div className="hidden lg:block h-screen overflow-hidden">
+          <div className="h-full grid grid-cols-3 gap-2 p-2">
+            {/* Calculator Section */}
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col">
+              {/* Header */}
+              <div className="px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 flex-shrink-0">
+                <div className="flex items-center">
+                  <FaCalculator className="w-6 h-6 text-white mr-2" />
+                  <h1 className="text-lg font-bold text-white">Rubble Calculator</h1>
+                </div>
               </div>
-            </div>
-
-            {/* Description - Fixed Height */}
-            <div className="px-4 py-2 bg-emerald-50 border-b border-emerald-100 flex-shrink-0">
-              <p className="text-sm text-emerald-800 leading-relaxed">
-                Providing and laying manually batched, machine-mixed M-25 grade design mix concrete for RCC works,
-                including pumping, centering, shuttering, finishing, and approved admixtures as per IS:9103 to modify
-                setting time and improve workability, including reinforcement, as directed by the Engineer-in-charge.
-              </p>
-            </div>
-
-            {/* Input Fields - Scrollable if needed */}
-            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
-              {[
-                { label: 'Footings', indata: ' nos', field: 'numberOfFootings', },
-                { label: 'L', indata: ' m', field: 'L', step: '0.01' },
-                { label: 'W', indata: 'm', field: 'W', },
-                { label: 'H', indata: ' m', field: 'H', },
-                { label: 'l', indata: ' m', field: 'l', },
-                { label: 'w', indata: ' m', field: 'w', },
-                { label: 'h ', indata: 'm', field: 'h', },
-
-              ].map(({ label, field, step, indata }) => (
-                <div key={field} className="flex items-center space-x-2">
-                  <label className="text-xs font-medium text-gray-700 flex items-center w-32 flex-shrink-0">
-                    <GoDotFill className="w-6 h-3 mr-1 text-emerald-600" />
-                    {label}
-                  </label>
-                  <input
-                  
-                    type="text"
-                    step="any"
-                    onWheel={(e) => e.target.blur()}
-                    placeholder="0"
-                    value={formData[field]}
-                    onKeyDown={(e) => handleKeyDown(e, field)}
-
-                    onChange={(e) => handleInputChange(field, e.target.value)}
-                    onBlur={(e) => handleBlur(field, e.target.value)}
-                    className="w-20 bg-emerald-50  px-2 py-1 border border-gray-200 rounded focus:ring-1 focus:ring-emerald-400 focus:border-emerald-500 text-xs"
-                  />
-                  <div className="text-xs font-medium text-gray-700 flex items-center w-24 flex-shrink-0">
-                    {indata}
+              {/* Description */}
+              <div className="px-4 py-2 bg-emerald-50 border-b border-emerald-100 flex-shrink-0">
+                <p className="text-xs text-emerald-800 leading-relaxed">
+                  Calculate rubble and mortar volumes for foundation and plinth courses.
+                </p>
+              </div>
+              {/* Input Fields */}
+              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+                {[{ label: "Total Length (L)", field: "L", unit: "m" },
+                { label: "Width foundation (W)", field: "W", unit: "m" },
+                { label: "Height foundation (H)", field: "H", unit: "m" },
+                { label: "Width plinth (w)", field: "w", unit: "m" },
+                { label: "Height plinth (h)", field: "h", unit: "m" }].map(({ label, field, unit }) => (
+                  <div key={field} className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs font-medium text-gray-700 flex items-center w-32 flex-shrink-0">
+                        <GoDotFill className="w-3 h-3 mr-1 text-emerald-600" />
+                        {label}
+                      </label>
+                      <input
+                        type="text"
+                        step="any"
+                        placeholder="0"
+                        value={formData[field]}
+                        onKeyDown={(e) => handleKeyDown(e, field)}
+                        onWheel={(e) => e.target.blur()}
+                        onChange={(e) => handleInputChange(field, e.target.value)}
+                        onBlur={(e) => handleBlur(field, e.target.value)}
+                        className={`w-20 bg-emerald-50 px-2 py-1 border rounded text-xs focus:ring-1 ${
+                          errors[field] ? "border-red-500 focus:ring-red-400" : "border-gray-200 focus:ring-emerald-400"
+                        }`}
+                      />
+                      <span className="text-xs text-gray-600">{unit}</span>
+                    </div>
+                    {errors[field] && <span className="text-[10px] text-red-500 ml-32">{errors[field]}</span>}
                   </div>
-
+                ))}
+                
+                {/* Ratio Input */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-medium text-gray-700 flex items-center w-32 flex-shrink-0">
+                      <GoDotFill className="w-3 h-3 mr-1 text-emerald-600" />
+                      Mortar Ratio
+                    </label>
+                    <select
+                      onChange={(e) => {
+                        const [r1, r2] = e.target.value.split(":").map(Number);
+                        setFormData((prev) => ({ ...prev, R1: r1, R2: r2 }));
+                      }}
+                      className="w-20 bg-emerald-50 px-2 py-1 border border-gray-200 rounded focus:ring-1 focus:ring-emerald-400 text-xs"
+                      value={formData.R1 && formData.R2 ? `${formData.R1}:${formData.R2}` : ""}
+                    >
+                      <option hidden>select</option>
+                      <option value="1:3">1:3</option>
+                      <option value="1:4">1:4</option>
+                      <option value="1:5">1:5</option>
+                      <option value="1:6">1:6</option>
+                    </select>
+                  </div>
+                  {errors.R2 && <span className="text-[10px] text-red-500 ml-32">{errors.R2}</span>}
                 </div>
 
-              ))}
-              <div className="flex items-center space-x-2">
-                <label className="text-xs font-medium text-gray-700 flex items-center w-32 flex-shrink-0">
-                  <GoDotFill className="w-6 h-3 mr-1 text-emerald-600" />
-                  Diameter of mat
-                </label>
-                <select onChange={(e) => handleInputChange("diameterMat", e.target.value)}
-                  className="w-20 bg-emerald-50  px-2 py-1 border border-gray-200 rounded focus:ring-1 focus:ring-emerald-400 focus:border-emerald-500 text-xs"
-                  value={formData['diameterMat'] || ''}>
-                  <option hidden>select  </option>
-                  <option value="6">6</option>
-                  <option value="8">8</option>
-                  <option value="10">10</option>
-                  <option value="12">12</option>
-                  <option value="16">16</option>
-                  <option value="20">20</option>
-                  <option value="32">32</option>
-                </select>
-                <div className="text-xs font-medium text-gray-700 flex items-center w-24 flex-shrink-0">
-                  mm
+                {/* Void Percentage */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-medium text-gray-700 flex items-center w-32 flex-shrink-0">
+                      <GoDotFill className="w-3 h-3 mr-1 text-emerald-600" />
+                      Voids filled with mortar
+                    </label>
+                    <div className="relative">
+                      <select 
+                        onChange={(e) => handleInputChange("voidpers", e.target.value)}
+                        className="w-20 bg-emerald-50 px-2 py-1 pr-6 border border-gray-200 rounded focus:ring-1 focus:ring-emerald-400 text-xs"
+                        value={formData.voidpers || ''}
+                      >
+                        <option hidden>select</option>
+                        <option value="50">50</option>
+                        <option value="60">60</option>
+                        <option value="70">70</option>
+                        <option value="80">80</option>
+                      </select>
+                      <button 
+                        type="button"
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-emerald-600"
+                        onMouseEnter={() => setShowVoidInfo(true)}
+                        onMouseLeave={() => setShowVoidInfo(false)}
+                      >
+                        <FaInfoCircle className="w-3 h-3" />
+                      </button>
+                      {showVoidInfo && (
+                        <div className="absolute z-50 left-0 top-7 w-48 p-2 bg-gray-900 text-white text-[10px] rounded shadow-xl">
+                          In rubble masonry, the total void space between stones is considered as 100%.
+                          Selecting 60% means 60% of these voids are filled with mortar, while 40% remain unfilled.
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-600">%</span>
+                  </div>
+                  {errors.voidpers && <span className="text-[10px] text-red-500 ml-32">{errors.voidpers}</span>}
                 </div>
-
               </div>
-              <div key={'spacing'} className="flex items-center space-x-2">
-                <label className="text-xs font-medium text-gray-700 flex items-center w-32 flex-shrink-0">
-                  <GoDotFill className="w-6 h-3 mr-1 text-emerald-600" />
-                  Spacing of mat
-                </label>
-                <input
-                  type="text"
-                  step="any"
-                     onKeyDown={(e) => handleKeyDown(e, "spacing")}
 
-                  onWheel={(e) => e.target.blur()}
-                  placeholder="0"
-                  value={formData['spacing']}
-                  onChange={(e) => handleInputChange("spacing", e.target.value)}
-                  onBlur={(e) => handleBlur("spacing", e.target.value)}
-
-
-                  className="w-20 px-2 py-1 bg-emerald-50  border border-gray-200 rounded focus:ring-1 focus:ring-emerald-400 focus:border-emerald-500 text-xs"
-                />
-                <div className="text-xs font-medium text-gray-700 flex items-center w-24 flex-shrink-0">
-                  m
-                </div>
-
-              </div>
-              <div className="px-4 py-3 flex-shrink-0">
+              {/* Calculate Button */}
+              <div className="p-3 flex-shrink-0">
                 <button
                   onClick={calculateResults}
-                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-medium py-2 px-4 rounded transition-all text-xs"
+                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-medium py-2 rounded transition-all text-xs"
                 >
                   <FaCalculator className="w-4 h-4 mr-1 inline" />
                   Calculate
                 </button>
               </div>
             </div>
-            {/* Calculate Button - Fixed at bottom */}
 
-          </div>
-
-          {/* Image Slider Section - 1/3 width */}
-          <div className="bg-white rounded-lg shadow-lg overflow-hidden relative flex flex-col">
-            <div
-              className="flex transition-transform duration-500 ease-in-out flex-1"
-              style={{ transform: `translateX(-${currentImage * 100}%)` }}
-            >
-              {flooringImages.map((image, index) => (
-                <img key={index} src={image} alt="" className="w-full h-full object-contain flex-shrink-0" />
-              ))}
-            </div>
-            <button onClick={previousImage} className="absolute left-2 top-1/2 -translate-y-1/2 bg-white p-1 rounded-full shadow">
-              <MdChevronLeft />
-            </button>
-            <button onClick={nextImage} className="absolute right-2 top-1/2 -translate-y-1/2 bg-white p-1 rounded-full shadow">
-              <MdChevronRight />
-            </button>
-          </div>
-          {/* Results Section - 1/3 width */}
-          <div className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col">
-            {/* Results Header - Fixed Height */}
-            <div className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 flex-shrink-0">
-              <h2 className="text-lg font-bold text-white flex items-center">
-                <FaCalculator className="w-6 h-6 mr-2" />
-                Results
-              </h2>
-              <p className="text-blue-100 text-xs mt-1">Material quantities required</p>
+            {/* Image Slider Section */}
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden relative">
+              <div
+                className="flex transition-transform duration-500 ease-in-out h-full"
+                style={{ transform: `translateX(-${currentImage * 100}%)` }}
+              >
+                {blockImages.map((image, index) => (
+                  <img key={index} src={image} alt="" className="w-full h-full object-contain flex-shrink-0" />
+                ))}
+              </div>
+              <button onClick={previousImage} className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 p-1 rounded-full shadow">
+                <MdChevronLeft />
+              </button>
+              <button onClick={nextImage} className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 p-1 rounded-full shadow">
+                <MdChevronRight />
+              </button>
             </div>
 
-            {/* Results Content - Flexible Height */}
-            <div className="flex-1 p-4 space-y-4">
-              {/* Steel Quantity */}
-              <div className="bg-gradient-to-br from-orange-50 to-red-50 border border-orange-200 rounded-lg p-4">
-                <div className="flex items-center mb-2">
-                  <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center mr-3">
-                    <GiSteelClaws className="w-4 h-4 text-white" />
+            {/* Results Section */}
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col">
+              {/* Results Header */}
+              <div className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 flex-shrink-0">
+                <h2 className="text-lg font-bold text-white flex items-center">
+                  <FaCalculator className="w-6 h-6 mr-2" />
+                  Results
+                </h2>
+                <p className="text-blue-100 text-xs mt-1">Material quantities required</p>
+              </div>
+              
+              {/* Results Content */}
+              <div className="flex-1 overflow-y-auto p-4">
+                <div className="p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
+                  <h4 className="text-sm font-bold text-emerald-800 mb-2">Summary</h4>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 flex items-center">
+                        Rubble volume foundation:
+                        <button 
+                          type="button"
+                          className="ml-1 text-gray-400 hover:text-emerald-600"
+                          onMouseEnter={() => setShowVoidInfo1(true)}
+                          onMouseLeave={() => setShowVoidInfo1(false)}
+                        >
+                          <FaInfoCircle className="w-3 h-3" />
+                        </button>
+                      </span>
+                      <span className="font-semibold text-gray-800">{results.volumeRubbleFoundation} m³</span>
+                    </div>
+                    {showVoidInfo1 && (
+                      <div className="p-2 bg-white rounded border border-gray-200 text-[10px] text-gray-600">
+                        In rubble foundation, 80% of total volume is rubble stones, 20% is voids.
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Mortar volume foundation:</span>
+                      <span className="font-semibold text-gray-800">{results.volumeMortarFoundation} m³</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 flex items-center">
+                        Rubble volume plinth:
+                        <button 
+                          type="button"
+                          className="ml-1 text-gray-400 hover:text-emerald-600"
+                          onMouseEnter={() => setShowVoidInfo2(true)}
+                          onMouseLeave={() => setShowVoidInfo2(false)}
+                        >
+                          <FaInfoCircle className="w-3 h-3" />
+                        </button>
+                      </span>
+                      <span className="font-semibold text-gray-800">{results.volumeRubblePlinth} m³</span>
+                    </div>
+                    {showVoidInfo2 && (
+                      <div className="p-2 bg-white rounded border border-gray-200 text-[10px] text-gray-600">
+                        In rubble foundation, 80% of total volume is rubble stones, 20% is voids.
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Mortar volume plinth:</span>
+                      <span className="font-semibold text-gray-800">{results.volumeMortarPlinth} m³</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Cement volume:</span>
+                      <span className="font-semibold text-gray-800">{results.cementVolume} m³</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Sand volume:</span>
+                      <span className="font-semibold text-gray-800">{results.sandVolume} m³</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Cement:</span>
+                      <span className="font-semibold text-gray-800">{results.cementbag} bags</span>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-sm font-bold text-gray-800">Steel Quantity</h3>
-                    <p className="text-xs text-gray-600">10mm Steel Bars</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-orange-600">{results.steelQuantity}</div>
-                  <div className="text-orange-500 font-medium text-sm">kg</div>
                 </div>
               </div>
 
-              {/* Concrete Quantity */}
-              <div className="bg-gradient-to-br from-gray-50 to-slate-50 border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center mb-2">
-                  <div className="w-8 h-8 bg-gray-500 rounded-lg flex items-center justify-center mr-3">
-                    <GiConcreteBag className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-sm font-bold text-gray-800">Concrete Quantity</h3>
-                    <p className="text-xs text-gray-600">M-25 Grade Concrete</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-gray-600">{results.concreteQuantity}</div>
-                  <div className="text-gray-500 font-medium text-sm">cu.m</div>
-                </div>
-              </div>
-
-              {/* Project Summary */}
-              <div className="p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
-                <h4 className="text-sm font-bold text-emerald-800 mb-2">Summary</h4>
-                <div className="grid grid-cols-1 gap-1 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Footings:</span>
-                    <span className="font-semibold text-gray-800">{formData.numberOfFootings} nos</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Steel:</span>
-                    <span className="font-semibold text-orange-600">{results.steelQuantity} kg</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Concrete:</span>
-                    <span className="font-semibold text-gray-600">{results.concreteQuantity} cu.m</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Grade:</span>
-                    <span className="font-semibold text-emerald-600">M-25</span>
-                  </div>
-                </div>
-              </div>
-              <div className="p-3 bg-gray-50 flex justify-center space-x-2 flex-shrink-0">
+              {/* Action Buttons */}
+              <div className="p-3 bg-gray-50 flex justify-center gap-2 flex-shrink-0">
                 <button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-3 py-2 rounded font-medium transition-all text-xs">
                   <FaPlusCircle className="w-3 h-3 mr-1 inline" />
                   Add
@@ -572,8 +639,8 @@ function Beem() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
-export default Beem;
+export default RubbleCalculator;

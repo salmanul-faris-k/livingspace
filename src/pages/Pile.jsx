@@ -7,18 +7,18 @@ import footings3 from '../assets/footings3.jpg'
 import footings4 from '../assets/footings4.jpg'
 import { GoDotFill } from 'react-icons/go';
 import { GiConcreteBag, GiSteelClaws } from 'react-icons/gi';
+import { IoMdRemove } from 'react-icons/io';
 
-
-function Beem() {
+function Pile() {
   const [currentImage, setCurrentImage] = useState(0);
   const [totalsteel, settotalsteel] = useState(0);
 
   const [formData, setFormData] = useState({
-    L: "",
-    B: "",
+    D: "",
     H: "",
-    diameterMainBar: "",
-    noOfMainBar: "",
+    noOfPile: "",
+    noofverticalbars: "",
+    diameterofverticalbars: "",
     diameterStirrups: "",
     spacingStirrups: ""
   });
@@ -27,18 +27,21 @@ function Beem() {
     steel16mm: 0,
     steel8mm: 0,
     concrete: 0,
-     cement: 0,
-    couresaggregate:0,
-    fineaggregate:0
+    cement: 0,
+    couresaggregate: 0,
+    fineaggregate: 0
   });
 
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.noOfMainBar || parseInt(formData.noOfMainBar) <= 0) {
-      newErrors.noOfMainBar = "Enter valid number of noOfMainBar";
+    if (!formData.noOfPile || parseInt(formData.noOfPile) <= 0) {
+      newErrors.noOfPile = "Enter valid number of Pile";
     }
-    ["L", "B", "H", "diameterMainBar", "noOfMainBar", "diameterStirrups", "spacingStirrups"].forEach(field => {
+    if (!formData.noofverticalbars || parseInt(formData.noofverticalbars) <= 0) {
+      newErrors.noofverticalbars = "Enter valid number of vertical bars";
+    }
+    ["D", "H", "noofverticalbars", "noOfPile", "diameterofverticalbars", "diameterStirrups", "spacingStirrups"].forEach(field => {
       if (!formData[field] || parseFloat(formData[field]) <= 0) {
         newErrors[field] = `Enter valid ${field}`;
       }
@@ -47,12 +50,13 @@ function Beem() {
     return Object.keys(newErrors).length === 0;
   };
 
+
   const flooringImages = [footings1, footings2, footings3, footings4];
 
   const nextImage = () => { setCurrentImage(prev => (prev + 1) % flooringImages.length); };
   const previousImage = () => { setCurrentImage(prev => (prev - 1 + flooringImages.length) % flooringImages.length); };
 
-  const decimalFields = ["L", "B", "H", "spacingStirrups"]; // removed changed dropdown fields
+  const decimalFields = ["D", "H", "noofverticalbars", "noOfPile", "diameterofverticalbars", "diameterStirrups", "spacingStirrups"]
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -72,42 +76,31 @@ function Beem() {
 
   const calculateResults = () => {
     if (!validateForm()) return;
-    const { L, B, H, diameterMainBar, noOfMainBar, diameterStirrups, spacingStirrups } = formData;
-    const Lm = parseFloat(L) || 0;
-    const Bm = parseFloat(B) || 0;
+    console.log("okannu");
+
+    const { D, H, noOfPile, noofverticalbars, diameterofverticalbars, diameterStirrups, spacingStirrups } = formData;
+    const Dm = parseFloat(D) || 0;
     const Hm = parseFloat(H) || 0;
-    const diaMain = parseFloat(diameterMainBar) || 0;
-    const numMain = parseInt(noOfMainBar) || 0;
+    const numpile = parseInt(noOfPile) || 0;
+    const numvertical = parseInt(noofverticalbars) || 0;
+
+    const diaMain = parseFloat(diameterofverticalbars) || 0;
     const diaStir = parseFloat(diameterStirrups) || 0;
     const spacing = parseFloat(spacingStirrups) || 1;
 
     // Concrete
-    const concrete = (Lm * Bm * Hm)*1.03;
+    const concrete = ((3.14 * (Dm / 2) * (Dm / 2) * Hm) * numpile);
 
-    // Main Steel (16mm)
-    // totalLengthMain = numMain * L (in m)
-    // Steel weight = totalLengthMain * dia^2 / 162
-    const bars=Lm+Hm
-    const totalLengthMain = (numMain * bars);
-    const steel16mm = ((totalLengthMain * Math.pow(diaMain, 2)) / 162)*1.03;
-
-    // Stirrups (8mm)
-    // number_stirrups = L / spacing + 1
-    // stirrup_length = 2 * (B + H)
-    // totalLengthStir = stirrup_length * number_stirrups
-    // weight = totalLengthStir * dia^2 / 162
-    const numberStirrups = Math.floor(Lm / spacing) + 1;
-    const stirrupLength = 2 * (Bm + Hm);
-    const totalLengthStir = stirrupLength * numberStirrups;
-    const steel8mm = ((totalLengthStir * Math.pow(diaStir, 2)) / 162)*1.03;
-const cement=(concrete*7.5).toFixed(2)
-const fineaggregate=((concrete*0.425)*1.03).toFixed(2)
-const couresaggregate=((concrete*0.850)*1.03).toFixed(2)
+    const steel16mm = (((diaMain * diaMain) / 162) * (Hm + 1.5) * numvertical * numpile)
+    const steel8mm = ((diaStir * diaStir / 162) * (((Dm - 0.1) * 3.14) + 0.16) * (Hm / spacing) * numpile)
+    const cement = (concrete * 7.5).toFixed(2)
+    const fineaggregate = ((concrete * 0.425) * 1.03).toFixed(2)
+    const couresaggregate = ((concrete * 0.850) * 1.03).toFixed(2)
     setResults({
       steel16mm: steel16mm.toFixed(2),
       steel8mm: steel8mm.toFixed(2),
-      concrete: concrete.toFixed(2)
-      ,cement,fineaggregate,couresaggregate
+      concrete: concrete.toFixed(2), cement, fineaggregate, couresaggregate
+
     });
   };
 
@@ -127,7 +120,6 @@ const couresaggregate=((concrete*0.850)*1.03).toFixed(2)
       }
     }
   };
-
   useEffect(() => {
     const total =
       Number(Number(results.steel16mm).toFixed(2)) +
@@ -135,12 +127,6 @@ const couresaggregate=((concrete*0.850)*1.03).toFixed(2)
 
     settotalsteel(Number(total.toFixed(1)));
   }, [results.steel16mm, results.steel8mm]);
-
-
-  // Dropdown options for the three fields
-const diameterMainBarOptions = ["6","8","10","12","16","32"]
-const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString());
-  const diameterStirrupsOptions = ["6", "8", "10","12"];
 
   return (
     <div className="min-h-screen md:h-screen bg-gradient-to-br from-gray-50 to-gray-100 lg:overflow-hidden">
@@ -152,62 +138,46 @@ const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString(
               {/* Header */}
               <div className="p-6 lg:p-8 bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center mb-2">
                 <FaCalculator className="w-8 h-8 text-white mr-3" />
-                <h1 className="text-2xl lg:text-3xl font-bold text-white">Beam</h1>
+                <h1 className="text-2xl lg:text-3xl font-bold text-white">pile</h1>
               </div>
               <div className="p-6 bg-emerald-50 border-b border-emerald-100">
                 <p className="text-sm text-emerald-800 leading-relaxed">
-                  Providing and laying manually batched, machine-mixed M-25 grade design mix concrete for RCC works, including pumping, centering, shuttering, finishing, and approved admixtures as per IS:9103 to modify setting time and improve workability, including reinforcement, as directed by the Engineer-in-charge.
-                </p>
+                  Providing and laying manually batched, machine-mixed M-25 grade design mix concrete for RCC works, including pumping, centering, shuttering, finishing, and approved admixtures as per IS:9103 to modify setting time and improve workability, including reinforcement, as directed by the Engineer-in-charge                                </p>
               </div>
               <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
 
                 {/* Input fields for the beam */}
                 {[
-                  { label: 'Length L', indata: ' (m)', field: 'L', inputType: "text" },
-                  { label: 'Breadth B', indata: ' (m)', field: 'B', inputType: "text" },
-                  { label: 'Height H', indata: ' (m)', field: 'H', inputType: "text" },
-                  { label: 'Diameter of Main Bar', indata: ' (mm)', field: 'diameterMainBar', inputType: "select", options: diameterMainBarOptions },
-                  { label: 'No. of Main Bar', indata: ' (nos)', field: 'noOfMainBar', inputType: "select", options: noOfMainBarOptions },
-                  { label: 'Diameter of Stirrups', indata: ' (mm)', field: 'diameterStirrups', inputType: "select", options: diameterStirrupsOptions },
-                  { label: 'Spacing of Stirrups', indata: ' (m)', field: 'spacingStirrups', inputType: "text" },
-                ].map(({ label, field, indata, inputType, options }) => (
+                  { label: 'Diameter of pile D', indata: ' (m)', field: 'D' },
+                  { label: 'Height of pile H', indata: ' (m)', field: 'H' },
+                  { label: 'No. of Pile', indata: ' (nos)', field: 'noOfPile' },
+                  { label: 'No. of vertical bars', indata: ' (nos)', field: 'noofverticalbars' },
+                  { label: 'Diameter of verticalbars', indata: ' (mm)', field: 'diameterofverticalbars' },
+                  { label: 'Diameter of Stirrups', indata: ' (mm)', field: 'diameterStirrups' },
+                  { label: 'Spacing of Stirrups', indata: ' (m)', field: 'spacingStirrups' },
+                ].map(({ label, field, indata }) => (
                   <div key={field} className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
                     <label className="text-sm font-semibold text-gray-700 flex items-center sm:w-56 sm:flex-shrink-0">
                       <GoDotFill className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-emerald-600 flex-shrink-0" />
                       <span className="text-xs sm:text-sm">{label}</span>
                     </label>
-                    {inputType === "select" ? (
-                      <select
-                        className="w-full bg-emerald-50 sm:flex-1 sm:max-w-32 px-3 py-2 sm:px-4 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 sm:focus:ring-3 focus:ring-emerald-400 focus:border-emerald-500 transition-all text-sm font-medium"
-                        value={formData[field]}
-                        onChange={(e) => handleInputChange(field, e.target.value)}
-                        onBlur={(e) => handleBlur(field, e.target.value)}
-                      >
-                        <option value="">Select</option>
-                        {options.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        step="any"
-                        onKeyDown={(e) => handleKeyDown(e, field)}
-                        onWheel={(e) => e.target.blur()}
-                        placeholder="0"
-                        value={formData[field]}
-                        onChange={(e) => handleInputChange(field, e.target.value)}
-                        onBlur={(e) => handleBlur(field, e.target.value)}
-                        className="w-full bg-emerald-50 sm:flex-1 sm:max-w-32 px-3 py-2 sm:px-4 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 sm:focus:ring-3 focus:ring-emerald-400 focus:border-emerald-500 transition-all text-sm font-medium"
-                      />
-                    )}
+                    <input
+                      type="text"
+                      step="any"
+                      onKeyDown={(e) => handleKeyDown(e, field)}
+                      onWheel={(e) => e.target.blur()}
+                      placeholder="0"
+                      value={formData[field]}
+                      onChange={(e) => handleInputChange(field, e.target.value)}
+                      onBlur={(e) => handleBlur(field, e.target.value)}
+                      className="w-full bg-emerald-50 sm:flex-1 sm:max-w-32 px-3 py-2 sm:px-4 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 sm:focus:ring-3 focus:ring-emerald-400 focus:border-emerald-500 transition-all text-sm font-medium"
+                    />
                     {errors[field] && (
                       <span className="text-red-500 text-xs">{errors[field]}</span>
                     )}
                     <span className="text-xs sm:text-sm">{indata}</span>
                   </div>
                 ))}
-
 
                 <button
                   onClick={calculateResults}
@@ -310,10 +280,7 @@ const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString(
               <div className="mt-6 md:mt-8 p-4 md:p-6 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl md:rounded-2xl border border-emerald-200">
                 <h4 className="text-base md:text-lg font-bold text-emerald-800 mb-2 md:mb-3">Project Summary</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 text-xs md:text-sm">
-                  <div>
-                    <span className="text-gray-600">Length:</span>
-                    <span className="font-semibold text-gray-800 ml-1 md:ml-2">{formData.L} m</span>
-                  </div>
+
                   <div>
                     <span className="text-gray-600">Steel 16mm:</span>
                     <span className="font-semibold text-orange-600 ml-1 md:ml-2">{results.steel16mm} kg</span>
@@ -329,18 +296,6 @@ const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString(
                   <div>
                     <span className="text-gray-600">Concrete:</span>
                     <span className="font-semibold text-gray-600 ml-1 md:ml-2">{results.concrete} cu.m</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">cement:</span>
-                    <span className="font-semibold text-emerald-600 ml-1 md:ml-2">{results.cement} bages</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">fine aggregate (M sand):</span>
-                    <span className="font-semibold text-emerald-600 ml-1 md:ml-2">{results.fineaggregate} m³</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">coures aggregate(metal):</span>
-                    <span className="font-semibold text-emerald-600 ml-1 md:ml-2">{results.couresaggregate} m³</span>
                   </div>
                 </div>
               </div>
@@ -369,56 +324,42 @@ const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString(
             <div className="px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 flex-shrink-0">
               <div className="flex items-center">
                 <FaCalculator className="w-6 h-6 text-white mr-2" />
-                <h1 className="text-lg font-bold text-white">Beam</h1>
+                <h1 className="text-lg font-bold text-white">pile</h1>
               </div>
             </div>
             <div className="px-4 py-2 bg-emerald-50 border-b border-emerald-100 flex-shrink-0">
               <p className="text-sm text-emerald-800 leading-relaxed">
-                Providing and laying manually batched, machine-mixed M-25 grade design mix concrete for RCC works, including pumping, centering, shuttering, finishing, and approved admixtures as per IS:9103 to modify setting time and improve workability, including reinforcement, as directed by the Engineer-in-charge.
+                Providing and laying manually batched, machine-mixed M-25 grade design mix concrete for RCC works, including pumping, centering, shuttering, finishing, and approved admixtures as per IS:9103 to modify setting time and improve workability, including reinforcement, as directed by the Engineer-in-charge
               </p>
             </div>
             <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
               {[
-                { label: 'Length L', indata: ' m', field: 'L', inputType: "text" },
-                { label: 'Breadth B', indata: ' m', field: 'B', inputType: "text" },
-                { label: 'Height H', indata: ' m', field: 'H', inputType: "text" },
-                { label: 'Diameter of Main Bar', indata: ' mm', field: 'diameterMainBar', inputType: "select", options: diameterMainBarOptions },
-                { label: 'No. of Main Bar', indata: ' nos', field: 'noOfMainBar', inputType: "select", options: noOfMainBarOptions },
-                { label: 'Diameter of Stirrups', indata: ' mm', field: 'diameterStirrups', inputType: "select", options: diameterStirrupsOptions },
-                { label: 'Spacing of Stirrups', indata: ' m', field: 'spacingStirrups', inputType: "text" },
-              ].map(({ label, field, indata, inputType, options }) => (
+                { label: 'Diameter of pile D', indata: ' (m)', field: 'D' },
+                { label: 'Height of pile H', indata: ' (m)', field: 'H' },
+                { label: 'No. of Pile', indata: ' (nos)', field: 'noOfPile' },
+                { label: 'No. of vertical bars', indata: ' (nos)', field: 'noofverticalbars' },
+                { label: 'Diameter of verticalbars', indata: ' (mm)', field: 'diameterofverticalbars' },
+                { label: 'Diameter of Stirrups', indata: ' (mm)', field: 'diameterStirrups' },
+                { label: 'Spacing of Stirrups', indata: ' (m)', field: 'spacingStirrups' },
+              ].map(({ label, field, indata }) => (
                 <div key={field} className="flex flex-col space-y-1">
                   <div className="flex items-center space-x-2">
                     <label className="text-xs font-medium text-gray-700 flex items-center w-40 flex-shrink-0">
                       <GoDotFill className="w-6 h-3 mr-1 text-emerald-600" />
                       {label}
                     </label>
-                    {inputType === "select" ? (
-                      <select
-                        className="w-20 bg-emerald-50  px-2 py-1 border border-gray-200 rounded focus:ring-1 focus:ring-emerald-400 focus:border-emerald-500 text-xs"
-                        value={formData[field]}
-                        onChange={(e) => handleInputChange(field, e.target.value)}
-                        onBlur={(e) => handleBlur(field, e.target.value)}
-                      >
-                        <option value="">Select</option>
-                        {options.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        step="any"
-                        placeholder="0"
-                        value={formData[field]}
-                        onWheel={(e) => e.target.blur()}
-                        onKeyDown={(e) => handleKeyDown(e, field)}
-                        onChange={(e) => handleInputChange(field, e.target.value)}
-                        onBlur={(e) => handleBlur(field, e.target.value)}
-                        className={`w-20 bg-emerald-50 px-2 py-1 border rounded text-xs focus:ring-1 
-                        ${errors[field] ? "border-red-500 focus:ring-red-400" : "border-gray-200 focus:ring-emerald-400 focus:border-emerald-500"}`}
-                      />
-                    )}
+                    <input
+                      type="text"
+                      step="any"
+                      placeholder="0"
+                      value={formData[field]}
+                      onWheel={(e) => e.target.blur()}
+                      onKeyDown={(e) => handleKeyDown(e, field)}
+                      onChange={(e) => handleInputChange(field, e.target.value)}
+                      onBlur={(e) => handleBlur(field, e.target.value)}
+                      className={`w-20 bg-emerald-50 px-2 py-1 border rounded text-xs focus:ring-1 
+                  ${errors[field] ? "border-red-500 focus:ring-red-400" : "border-gray-200 focus:ring-emerald-400 focus:border-emerald-500"}`}
+                    />
                     <div className="text-xs font-medium text-gray-700 flex items-center w-24 flex-shrink-0">
                       {indata}
                     </div>
@@ -457,7 +398,7 @@ const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString(
             </button>
           </div>
           {/* Results Section */}
-          <div className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col">
+          <div className="bg-white rounded-lg shadow-lg ml-12 overflow-hidden flex flex-col">
             <div className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 flex-shrink-0">
               <h2 className="text-lg font-bold text-white flex items-center">
                 <FaCalculator className="w-6 h-6 mr-2" />
@@ -466,88 +407,60 @@ const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString(
               <p className="text-blue-100 text-xs mt-1">Material quantities required</p>
             </div>
             <div className="flex-1 p-4 space-y-4">
-              {/* Steel 16mm */}
-              <div className="bg-gradient-to-br from-orange-50 to-red-50 border border-orange-200 rounded-lg p-4">
-                {/* Header */}
-                <div className="flex items-center mb-3">
-                  <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center mr-3">
-                    <GiSteelClaws className="w-4 h-4 text-white" />
-                  </div>
-                  <h3 className="text-sm font-bold text-gray-800">Steel Quantity</h3>
-                </div>
 
-                {/* Steel details */}
-                <div className="space-y-2">
-                  {/* 16mm */}
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-700">Steel Quantity 16mm</span>
-                    <span className="font-bold text-orange-600">{results.steel16mm} kg</span>
-                  </div>
-                  {/* 8mm */}
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-700">Steel Quantity 8mm</span>
-                    <span className="font-bold text-orange-600">{results.steel8mm} kg</span>
-                  </div>
-                  {/* Total */}
-                  <div className="flex justify-between text-sm border-t border-orange-200 pt-2">
-                    <span className="text-gray-900 font-semibold">Total Steel</span>
-                    <span className="font-bold text-red-600">{totalsteel} kg</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Concrete */}
-              <div className="bg-gradient-to-br from-gray-50 to-slate-50 border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center mb-2">
-                  <div className="w-8 h-8 bg-gray-500 rounded-lg flex items-center justify-center mr-3">
-                    <GiConcreteBag className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-sm font-bold text-gray-800">Concrete Quantity</h3>
-                    <p className="text-xs text-gray-600">M-25 Grade Concrete</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-gray-600">{results.concrete}</div>
-                  <div className="text-gray-500 font-medium text-sm">cu.m</div>
-                </div>
-              </div>
-              {/* Project Summary */}
-              <div className="p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
-                <h4 className="text-sm font-bold text-emerald-800 mb-2">Summary</h4>
+              <div className="p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border  border-emerald-200">
+                <h4 className="text-md font-bold text-black mb-2">Concrete</h4>
                 <div className="grid grid-cols-1 gap-1 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Length:</span>
-                    <span className="font-semibold text-gray-800">{formData.L} m</span>
+
+
+                  <div className="flex justify-between font-bold items-center bg-gray-300">
+                    <span className="text-black">Concrete: </span>
+                    <IoMdRemove className='ml-24' />
+                    <span >{results.concrete} cu.m</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Steel 16mm:</span>
-                    <span className="font-semibold text-orange-600">{results.steel16mm} kg</span>
+                  <div className="flex justify-between font-bold items-center bg-gray-300">
+                    <span className="text-black">cement: </span>
+                    <IoMdRemove className='ml-28' />
+                    <span >{results.cement} bages</span>
+
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Steel 8mm:</span>
-                    <span className="font-semibold text-orange-600">{results.steel8mm} kg</span>
+                  <div className="flex justify-between font-bold items-center bg-gray-300">
+                    <span className="text-black">fine aggregate (M sand):</span>
+                                        <IoMdRemove  />
+
+                    <span >{results.fineaggregate} m³</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">TotalSteel:</span>
-                    <span className="font-semibold text-orange-600">{totalsteel} kg</span>
+                 <div className="flex justify-between font-bold items-center bg-gray-300">
+                    <span className="text-black">coures aggregate(metal):</span>
+                                        <IoMdRemove  />
+
+                    <span >{results.couresaggregate} m³</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Concrete:</span>
-                    <span className="font-semibold text-gray-600">{results.concrete} cu.m</span>
+
+
+                </div>
+              </div>
+              <div className="p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border  border-emerald-200">
+                <h4 className="text-md font-bold text-black mb-2">Steel</h4>
+                <div className="grid grid-cols-1 gap-1 text-xs">
+
+                  <div className="flex justify-between items-center bg-gray-300 font-bold ">
+                    <span className="text-black">Steel 16mm</span>
+                    <IoMdRemove />
+                    <span >{results.steel16mm} kg</span>
                   </div>
-                    <div className="flex justify-between">
-                    <span className="text-gray-600">cement:</span>
-                    <span className="font-semibold text-emerald-600">{results.cement} bags</span>
+                  <div className="flex justify-between font-bold items-center bg-gray-300">
+                    <span className="text-black">Steel 8mm  </span>
+                    <IoMdRemove className='' />
+                    <span >{results.steel8mm} kg</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">fine aggregate(m sand):</span>
-                    <span className="font-semibold text-emerald-600">{results.fineaggregate} m³</span>
+                  <div className="flex justify-between items-center bg-gray-300 text-sm mt-6 font-bold">
+                    <span className="text-black  ">Total Steel:</span>
+                    <IoMdRemove />
+
+                    <span >{totalsteel} kg</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">coures aggregate (metal):</span>
-                    <span className="font-semibold text-emerald-600">{results.couresaggregate} m³</span>
-                  </div>
+
                 </div>
               </div>
               <div className="p-3 bg-gray-50 flex justify-center space-x-2 flex-shrink-0">
@@ -568,5 +481,4 @@ const noOfMainBarOptions = Array.from({ length: 9 }, (_, i) => (i + 4).toString(
   );
 }
 
-
-export default Beem;
+export default Pile;

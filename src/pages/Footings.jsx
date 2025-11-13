@@ -18,13 +18,19 @@ function Footings() {
     w: "",
     h: "",
     diameterMat: "",
-    spacing: ""
+    spacing: "",
+    Grade: "",
   });
   const [errors, setErrors] = useState({});
 
   const [results, setResults] = useState({
     steelQuantity: 0,
-    concreteQuantity: 0
+    concreteQuantity: 0,
+    Grade: 0,
+    cement: 0,
+    couresaggregate:0,
+    fineaggregate:0
+
   });
   const validateForm = () => {
     const newErrors = {};
@@ -33,7 +39,7 @@ function Footings() {
       newErrors.numberOfFootings = "Enter valid number of footings";
     }
 
-    ["L", "W", "H", "l", "w", "h"].forEach(field => {
+    ["L", "W", "H", "l", "w", "h",].forEach(field => {
       if (!formData[field] || parseFloat(formData[field]) <= 0) {
         newErrors[field] = `Enter valid ${field}`;
       }
@@ -45,6 +51,10 @@ function Footings() {
 
     if (!formData.spacing || parseFloat(formData.spacing) <= 0) {
       newErrors.spacing = "Enter valid spacing";
+    }
+
+    if (!formData.Grade) {
+      newErrors.Grade = "Select Grade";
     }
 
     setErrors(newErrors);
@@ -92,7 +102,7 @@ function Footings() {
 
   const calculateResults = () => {
     if (!validateForm()) return;
-    const { numberOfFootings, L, W, H, l, w, h, diameterMat, spacing } = formData;
+    const { numberOfFootings, L, W, H, l, w, h, diameterMat, spacing, Grade } = formData;
 
     // parse safely
     const n = parseInt(numberOfFootings) || 0;
@@ -112,13 +122,20 @@ function Footings() {
       n;
 
     // Concrete formula
-  const concreteQuantity =
-  (Lm * Wm * Hm) +
-  (((hm / 3) * ((Lm * Wm) + (lm * wm) + Math.sqrt(Lm * Wm * lm * wm))) * n);
-
+    const concreteQuantity =
+      (Lm * Wm * Hm) +
+      (((hm / 3) * ((Lm * Wm) + (lm * wm) + Math.sqrt(Lm * Wm * lm * wm))) * n);
+    const totalsell = steelQuantity * 1.03
+    const totalcon = concreteQuantity * 1.03
+const cement=(concreteQuantity*7.5).toFixed(2)
+const fineaggregate=((concreteQuantity*0.425)*1.03).toFixed(2)
+const couresaggregate=((concreteQuantity*0.850)*1.03).toFixed(2)
     setResults({
-      steelQuantity: steelQuantity.toFixed(2),
-      concreteQuantity: concreteQuantity.toFixed(2)
+      steelQuantity: totalsell.toFixed(2),
+      concreteQuantity: totalcon.toFixed(2),
+      Grade,
+      cement,
+      fineaggregate,couresaggregate
     });
   };
 
@@ -166,9 +183,7 @@ function Footings() {
               {/* Description */}
               <div className="p-6 bg-emerald-50 border-b border-emerald-100">
                 <p className="text-sm text-emerald-800 leading-relaxed">
-                  Providing and laying manually batched, machine-mixed M-25 grade design mix concrete for RCC works,
-                  including pumping, centering, shuttering, finishing, and approved admixtures as per IS:9103 to modify
-                  setting time and improve workability, including reinforcement, as directed by the Engineer-in-charge.
+                  Providing and laying manually batched, machine-mixed M-25 grade design mix concrete for RCC works, including pumping, centering, shuttering, finishing, and approved admixtures as per IS:9103 to modify setting time and improve workability, including reinforcement, as directed by the Engineer-in-charge
                 </p>
               </div>
 
@@ -213,23 +228,18 @@ function Footings() {
                     <GoDotFill className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-emerald-600 flex-shrink-0" />
                     <span className="text-xs sm:text-sm">Diameter of mat</span>
                   </label>
-             <div className="w-full max-w-xs mx-auto">
-  <select
-    onChange={(e) => handleInputChange("diameterMat", e.target.value)}
-    className="w-full bg-emerald-50 px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:border-emerald-500 transition-all text-sm font-medium"
-    value={formData['diameterMat'] || ''}
-  >
-    <option hidden>select</option>
-    <option value="6">6</option>
-    <option value="8">8</option>
-    <option value="10">10</option>
-    <option value="12">12</option>
-    <option value="16">16</option>
-    <option value="20">20</option>
-    <option value="32">32</option>
-  </select>
-</div>
-
+                  <select onChange={(e) => handleInputChange("diameterMat", e.target.value)}
+                    className="w-full bg-emerald-50  sm:flex-1 sm:max-w-32 px-3 py-2 sm:px-4 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 sm:focus:ring-3 focus:ring-emerald-400 focus:border-emerald-500 transition-all text-sm font-medium"
+                    value={formData['diameterMat'] || ''}>
+                    <option hidden>select  </option>
+                    <option value="6">6</option>
+                    <option value="8">8</option>
+                    <option value="10">10</option>
+                    <option value="12">12</option>
+                    <option value="16">16</option>
+                    <option value="20">20</option>
+                    <option value="32">32</option>
+                  </select>
                   {errors.diameterMat && (
                     <span className="text-red-500 text-xs">{errors.diameterMat}</span>
                   )}
@@ -258,6 +268,23 @@ function Footings() {
                     <span className="text-red-500 text-xs">{errors["spacing"]}</span>
                   )}
                   <span className="text-xs sm:text-sm">(m)</span>
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                  <label className="text-sm font-semibold text-gray-700 flex items-center sm:w-56 sm:flex-shrink-0">
+                    <GoDotFill className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-emerald-600 flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">Grade:</span>
+                  </label>
+                  <select onChange={(e) => handleInputChange("Grade", e.target.value)}
+                    className="w-full bg-emerald-50  sm:flex-1 sm:max-w-32 px-3 py-2 sm:px-4 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 sm:focus:ring-3 focus:ring-emerald-400 focus:border-emerald-500 transition-all text-sm font-medium"
+                    value={formData['Grade'] || ''}>
+                    <option hidden>select  </option>
+                    <option value="20">M-20</option>
+                    <option value="25">M-25</option>
+                  </select>
+                  {errors.Grade && (
+                    <span className="text-red-500 text-xs">{errors.Grade}</span>
+                  )}
+                  <span className="text-xs sm:text-sm">  (mm)</span>
                 </div>
 
                 {/* Calculate Button */}
@@ -339,7 +366,6 @@ function Footings() {
                     </div>
                     <div>
                       <h3 className="text-base md:text-lg font-bold text-gray-800">Concrete Quantity</h3>
-                      <p className="text-xs md:text-sm text-gray-600">M-25 Grade Concrete</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -358,7 +384,7 @@ function Footings() {
                     <span className="font-semibold text-gray-800 ml-1 md:ml-2">{formData.numberOfFootings} nos</span>
                   </div>
                   <div>
-                    <span className="text-gray-600">Total Steel:</span>
+                    <span className="text-gray-600">Steel {formData.diameterMat} mm::</span>
                     <span className="font-semibold text-orange-600 ml-1 md:ml-2">{results.steelQuantity} kg</span>
                   </div>
                   <div>
@@ -370,7 +396,19 @@ function Footings() {
 
                   <div>
                     <span className="text-gray-600">Grade:</span>
-                    <span className="font-semibold text-emerald-600 ml-1 md:ml-2">M-25</span>
+                    <span className="font-semibold text-emerald-600 ml-1 md:ml-2">M-{results.Grade}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">cement:</span>
+                    <span className="font-semibold text-emerald-600 ml-1 md:ml-2">{results.cement} bages</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">fine aggregate (M sand):</span>
+                    <span className="font-semibold text-emerald-600 ml-1 md:ml-2">{results.fineaggregate} m³</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">coures aggregate(metal):</span>
+                    <span className="font-semibold text-emerald-600 ml-1 md:ml-2">{results.couresaggregate} m³</span>
                   </div>
                 </div>
               </div>
@@ -410,50 +448,48 @@ function Footings() {
             {/* Description - Fixed Height */}
             <div className="px-4 py-2 bg-emerald-50 border-b border-emerald-100 flex-shrink-0">
               <p className="text-sm text-emerald-800 leading-relaxed">
-                Providing and laying manually batched, machine-mixed M-25 grade design mix concrete for RCC works,
-                including pumping, centering, shuttering, finishing, and approved admixtures as per IS:9103 to modify
-                setting time and improve workability, including reinforcement, as directed by the Engineer-in-charge.
+                Providing and laying manually batched, machine-mixed M-25 grade design mix concrete for RCC works, including pumping, centering, shuttering, finishing, and approved admixtures as per IS:9103 to modify setting time and improve workability, including reinforcement, as directed by the Engineer-in-charge
               </p>
             </div>
 
             {/* Input Fields - Scrollable if needed */}
             <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
-             {[
-  { label: 'Footings', indata: ' nos', field: 'numberOfFootings' },
-  { label: 'L', indata: ' m', field: 'L', step: '0.01' },
-  { label: 'W', indata: ' m', field: 'W' },
-  { label: 'H', indata: ' m', field: 'H' },
-  { label: 'l', indata: ' m', field: 'l' },
-  { label: 'w', indata: ' m', field: 'w' },
-  { label: 'h', indata: ' m', field: 'h' },
-].map(({ label, field, step, indata }) => (
-  <div key={field} className="flex flex-col space-y-1">
-    <div className="flex items-center space-x-2">
-      <label className="text-xs font-medium text-gray-700 flex items-center w-32 flex-shrink-0">
-        <GoDotFill className="w-6 h-3 mr-1 text-emerald-600" />
-        {label}
-      </label>
-      <input
-        type="text"
-        step={step || "any"}
-        placeholder="0"
-        value={formData[field]}
-        onWheel={(e) => e.target.blur()}
-        onKeyDown={(e) => handleKeyDown(e, field)}
-        onChange={(e) => handleInputChange(field, e.target.value)}
-        onBlur={(e) => handleBlur(field, e.target.value)}
-        className={`w-20 bg-emerald-50 px-2 py-1 border rounded text-xs focus:ring-1 
+              {[
+                { label: 'Footings', indata: ' nos', field: 'numberOfFootings' },
+                { label: 'L', indata: ' m', field: 'L', step: '0.01' },
+                { label: 'W', indata: ' m', field: 'W' },
+                { label: 'H', indata: ' m', field: 'H' },
+                { label: 'l', indata: ' m', field: 'l' },
+                { label: 'w', indata: ' m', field: 'w' },
+                { label: 'h', indata: ' m', field: 'h' },
+              ].map(({ label, field, step, indata }) => (
+                <div key={field} className="flex flex-col space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <label className="text-xs font-medium text-gray-700 flex items-center w-32 flex-shrink-0">
+                      <GoDotFill className="w-6 h-3 mr-1 text-emerald-600" />
+                      {label}
+                    </label>
+                    <input
+                      type="text"
+                      step={step || "any"}
+                      placeholder="0"
+                      value={formData[field]}
+                      onWheel={(e) => e.target.blur()}
+                      onKeyDown={(e) => handleKeyDown(e, field)}
+                      onChange={(e) => handleInputChange(field, e.target.value)}
+                      onBlur={(e) => handleBlur(field, e.target.value)}
+                      className={`w-20 bg-emerald-50 px-2 py-1 border rounded text-xs focus:ring-1 
           ${errors[field] ? "border-red-500 focus:ring-red-400" : "border-gray-200 focus:ring-emerald-400 focus:border-emerald-500"}`}
-      />
-      <div className="text-xs font-medium text-gray-700 flex items-center w-24 flex-shrink-0">
-        {indata}
-      </div>
-    </div>
-    {errors[field] && (
-      <span className="text-[10px] text-red-500 ml-32">{errors[field]}</span>
-    )}
-  </div>
-))}
+                    />
+                    <div className="text-xs font-medium text-gray-700 flex items-center w-24 flex-shrink-0">
+                      {indata}
+                    </div>
+                  </div>
+                  {errors[field] && (
+                    <span className="text-[10px] text-red-500 ml-32">{errors[field]}</span>
+                  )}
+                </div>
+              ))}
 
               <div className="flex items-center space-x-2">
                 <label className="text-xs font-medium text-gray-700 flex items-center w-32 flex-shrink-0">
@@ -477,10 +513,10 @@ function Footings() {
                 </div>
 
               </div>
-          
-                     {errors["diameterMat"] && (
-      <span className="text-[10px] text-red-500 ml-32">{errors["diameterMat"]}</span>
-    )}
+
+              {errors["diameterMat"] && (
+                <span className="text-[10px] text-red-500 ml-32">{errors["diameterMat"]}</span>
+              )}
               <div key={'spacing'} className="flex items-center space-x-2">
                 <label className="text-xs font-medium text-gray-700 flex items-center w-32 flex-shrink-0">
                   <GoDotFill className="w-6 h-3 mr-1 text-emerald-600" />
@@ -505,9 +541,31 @@ function Footings() {
                 </div>
 
               </div>
-               {errors["spacing"] && (
-      <span className="text-[10px] text-red-500 ml-32">{errors["spacing"]}</span>
-    )}
+              {errors["spacing"] && (
+                <span className="text-[10px] text-red-500 ml-32">{errors["spacing"]}</span>
+              )}
+              <div className="flex items-center space-x-2">
+                <label className="text-xs font-medium text-gray-700 flex items-center w-32 flex-shrink-0">
+                  <GoDotFill className="w-6 h-3 mr-1 text-emerald-600" />
+                  Grade:
+                </label>
+                <select onChange={(e) => handleInputChange("Grade", e.target.value)}
+                  className="w-20 bg-emerald-50  px-2 py-1 border border-gray-200 rounded focus:ring-1 focus:ring-emerald-400 focus:border-emerald-500 text-xs"
+                  value={formData['Grade'] || ''}>
+                  <option hidden>select  </option>
+                  <option value="20">M-20</option>
+                  <option value="25">M-25</option>
+
+                </select>
+                <div className="text-xs font-medium text-gray-700 flex items-center w-24 flex-shrink-0">
+                  mm
+                </div>
+
+              </div>
+
+              {errors["Grade"] && (
+                <span className="text-[10px] text-red-500 ml-32">{errors["Grade"]}</span>
+              )}
               <div className="px-4 py-3 flex-shrink-0">
                 <button
                   onClick={calculateResults}
@@ -575,10 +633,7 @@ function Footings() {
                   <div className="w-8 h-8 bg-gray-500 rounded-lg flex items-center justify-center mr-3">
                     <GiConcreteBag className="w-4 h-4 text-white" />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-sm font-bold text-gray-800">Concrete Quantity</h3>
-                    <p className="text-xs text-gray-600">M-25 Grade Concrete</p>
-                  </div>
+                  <h3 className="text-sm font-bold text-gray-800">Concrete Quantity</h3>
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold text-gray-600">{results.concreteQuantity}</div>
@@ -595,7 +650,7 @@ function Footings() {
                     <span className="font-semibold text-gray-800">{formData.numberOfFootings} nos</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Steel:</span>
+                    <span className="text-gray-600">Steel {formData.diameterMat} mm:</span>
                     <span className="font-semibold text-orange-600">{results.steelQuantity} kg</span>
                   </div>
                   <div className="flex justify-between">
@@ -604,7 +659,19 @@ function Footings() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Grade:</span>
-                    <span className="font-semibold text-emerald-600">M-25</span>
+                    <span className="font-semibold text-emerald-600">M-{results.Grade}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">cement:</span>
+                    <span className="font-semibold text-emerald-600">{results.cement} bags</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">fine aggregate(m sand):</span>
+                    <span className="font-semibold text-emerald-600">{results.fineaggregate} m³</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">coures aggregate (metal):</span>
+                    <span className="font-semibold text-emerald-600">{results.couresaggregate} m³</span>
                   </div>
                 </div>
               </div>

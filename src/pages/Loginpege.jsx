@@ -7,7 +7,7 @@ function Loginpege() {
     login: '',
     Password: '',
   });
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -16,25 +16,25 @@ function Loginpege() {
     e.preventDefault();
     setIsLoading(true);
     setErrors({});
-    
+
     // Basic validation
     const newErrors = {};
     if (!loginInfo.login) newErrors.login = 'Email or phone is required';
     if (!loginInfo.Password) newErrors.Password = 'Password is required';
-    
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setIsLoading(false);
       return;
     }
-    
+
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
       // Handle login logic here
     }, 2000);
   };
-console.log(loginInfo);
+  console.log(loginInfo);
 
   return (
     <div className="flex items-center justify-center min-h-screen px-4 bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50">
@@ -43,18 +43,18 @@ console.log(loginInfo);
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-green-200/20 rounded-full blur-3xl"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-emerald-200/20 rounded-full blur-3xl"></div>
       </div>
-      
+
       <div className="w-full max-w-md relative">
         {/* Logo/Brand area */}
         <div className="text-center mb-8">
-         
+
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Login</h1>
           <p className="text-gray-600">Sign in to your real estate account</p>
         </div>
 
         {/* Login Form */}
         <div className="bg-white/70 backdrop-blur-sm shadow-2xl rounded-3xl p-8 border border-white/20">
-          <form onSubmit={(e)=>handleSubmit(e)} className="space-y-6">
+          <form onSubmit={(e) => handleSubmit(e)} className="space-y-6">
             {/* Email/Phone Input */}
             <div>
               <label htmlFor="login" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -69,18 +69,17 @@ console.log(loginInfo);
                     setLoginInfo({ ...loginInfo, login: e.target.value.trim() });
                     if (errors.login) setErrors({ ...errors, login: '' });
                   }}
-                  className={`w-full h-12 rounded-xl border-2 px-4 pr-12 transition-all duration-300 focus:outline-none bg-white/50 placeholder-gray-400 ${
-                    errors.login 
-                      ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200' 
+                  className={`w-full h-12 rounded-xl border-2 px-4 pr-12 transition-all duration-300 focus:outline-none bg-white/50 placeholder-gray-400 ${errors.login
+                      ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
                       : 'border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 hover:border-green-300'
-                  }`}
+                    }`}
                   placeholder="Enter your email or phone"
                 />
-                
+
               </div>
               {errors.login && <p className="text-red-500 text-sm mt-1">{errors.login}</p>}
             </div>
-           
+
             {/* Password Input */}
             <div>
               <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -97,11 +96,10 @@ console.log(loginInfo);
                   }}
                   onPaste={(e) => e.preventDefault()}
                   onCopy={(e) => e.preventDefault()}
-                  className={`w-full h-12 rounded-xl border-2 px-4 pr-12 transition-all duration-300 focus:outline-none bg-white/50 placeholder-gray-400 ${
-                    errors.Password 
-                      ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200' 
+                  className={`w-full h-12 rounded-xl border-2 px-4 pr-12 transition-all duration-300 focus:outline-none bg-white/50 placeholder-gray-400 ${errors.Password
+                      ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
                       : 'border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 hover:border-green-300'
-                  }`}
+                    }`}
                   placeholder="Enter your password"
                 />
                 <button
@@ -110,9 +108,9 @@ console.log(loginInfo);
                   className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   {showPassword ? (
-                    <IoMdEye/>
+                    <IoMdEye />
                   ) : (
-                                       <IoMdEyeOff/>
+                    <IoMdEyeOff />
 
                   )}
                 </button>
@@ -122,15 +120,15 @@ console.log(loginInfo);
 
             {/* Remember me & Forgot password */}
             <div className="flex items-center justify-end text-sm">
-              
-              <Link 
-                to="/forgot-password" 
+
+              <Link
+                to="/forgot-password"
                 className="text-green-600 hover:text-green-800 transition-colors font-medium hover:underline"
               >
                 Forgot password?
               </Link>
             </div>
-           
+
             {/* Submit Button */}
             <button
               type="submit"
@@ -150,11 +148,11 @@ console.log(loginInfo);
               )}
             </button>
           </form>
-          
-        
-        
+
+
+
         </div>
-        
+
         {/* Footer */}
         <div className="mt-8 text-center">
           <p className="text-gray-500 text-sm flex items-center justify-center">
