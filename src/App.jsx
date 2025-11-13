@@ -6,13 +6,13 @@ import Home from './pages/Home'
 import Beem from './pages/Beem'
 import UserLayout from './components/UserLayout'
 import Pile from './pages/Pile'
-import Lintel from './pages/lintel'
 import Sunshade from './pages/Sunshade'
 import BlockWallCalculator from './pages/BlockLength'
 import Plastering from './pages/Plastering'
 import DevelopmentMenu from './pages/ConstructionMenu'
 import Rubble from './pages/Rubble'
 import Demo from './pages/Demo'
+import Lintel from './pages/lintel'
 
 function App() {
 
