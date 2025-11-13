@@ -12,7 +12,8 @@ import Plastering from './pages/Plastering'
 import DevelopmentMenu from './pages/ConstructionMenu'
 import Rubble from './pages/Rubble'
 import Demo from './pages/Demo'
-import Lintel from './pages/lintel'
+import Lintel from './pages/Lintel'
+
 
 function App() {
 
